@@ -1,0 +1,415 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>QueueBite – Sign In</title>
+  <!-- Tailwind CSS via CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <!-- Theme Configuration (Cocoa & Cream) -->
+  <script src="theme.js"></script>
+  <!-- Inter & Plus Jakarta Sans Font -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <style>
+    body {
+      font-family: 'Plus Jakarta Sans', sans-serif;
+    }
+    /* Shake animation for input errors */
+    @keyframes errorShake {
+      0%, 100% { transform: translateX(0); }
+      20%, 60% { transform: translateX(-6px); }
+      40%, 80% { transform: translateX(6px); }
+    }
+    .shake {
+      animation: errorShake 0.4s ease-in-out;
+    }
+  </style>
+</head>
+
+<body class="bg-[#ECE2D5] min-h-screen flex items-center justify-center p-0 sm:py-6 selection:bg-accent selection:text-ink">
+
+  <!-- Mobile Screen Container -->
+  <main class="w-full max-w-md min-h-screen sm:min-h-[850px] bg-cream flex flex-col justify-between shadow-2xl sm:rounded-[36px] overflow-hidden border border-[#E2D2C0]/60 relative p-6">
+
+    <!-- Top Navigation Bar -->
+    <div>
+      <header class="flex items-center justify-between pb-4">
+        <!-- Back Button -->
+        <a href="index.html" 
+           class="w-10 h-10 rounded-2xl bg-white shadow-sm border border-primary/10 flex items-center justify-center text-ink hover:bg-primary-light active:scale-90 transition-all duration-150"
+           aria-label="Back to welcome page">
+          <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2.2" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M15.75 19.5L8.25 12l7.5-7.5" />
+          </svg>
+        </a>
+
+        <!-- Small Brand Header -->
+        <div class="flex items-center gap-1.5">
+          <span class="text-xl">🍛</span>
+          <span class="font-extrabold text-ink tracking-tight text-lg">QueueBite</span>
+        </div>
+
+        <!-- Help / Info indicator -->
+        <div class="w-10 h-10 rounded-2xl bg-primary-light/50 border border-primary/15 flex items-center justify-center text-xs font-bold text-primary">
+          Fast
+        </div>
+      </header>
+
+      <!-- Page Title & Subtitle -->
+      <section class="mt-4 mb-6">
+        <h1 class="text-2xl font-extrabold text-ink tracking-tight">
+          Welcome back! 👋
+        </h1>
+        <p class="text-ink-muted text-sm mt-1">
+          Choose your account type to proceed.
+        </p>
+      </section>
+
+      <!-- Segmented Tab Switch: Student vs Admin -->
+      <nav class="bg-[#EFE4D6] p-1.5 rounded-2xl flex items-center shadow-inner mb-6" aria-label="Login Role Selection">
+        <button id="tabStudentBtn" 
+                type="button"
+                onclick="switchTab('student')"
+                class="flex-1 py-2.5 rounded-xl font-bold text-sm transition-all duration-200 flex items-center justify-center gap-2 bg-white text-ink shadow-sm">
+          <span>🎓</span>
+          <span>Student</span>
+        </button>
+
+        <button id="tabAdminBtn" 
+                type="button"
+                onclick="switchTab('admin')"
+                class="flex-1 py-2.5 rounded-xl font-bold text-sm transition-all duration-200 flex items-center justify-center gap-2 text-ink-muted hover:text-ink">
+          <span>🧑‍🍳</span>
+          <span>Canteen Staff</span>
+        </button>
+      </nav>
+
+      <!-- Dynamic Alert / Notification Box -->
+      <div id="alertBox" class="hidden mb-5 p-3 rounded-2xl text-xs font-medium border flex items-start gap-2.5 transition-all duration-200">
+        <span id="alertIcon" class="text-base">⚠️</span>
+        <div class="flex-1">
+          <p id="alertTitle" class="font-bold"></p>
+          <p id="alertMessage" class="mt-0.5 text-[11px]"></p>
+        </div>
+      </div>
+
+      <!-- ================================================================= -->
+      <!-- STUDENT LOGIN FORM -->
+      <!-- ================================================================= -->
+      <form id="studentForm" onsubmit="handleStudentLogin(event)" class="space-y-4">
+        
+        <!-- Name Input -->
+        <div>
+          <label for="studentName" class="block text-xs font-bold uppercase tracking-wider text-ink-muted mb-1.5">
+            Your Full Name
+          </label>
+          <div class="relative">
+            <span class="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-ink-subtle text-base">
+              👤
+            </span>
+            <input type="text" 
+                   id="studentName" 
+                   name="studentName"
+                   placeholder="e.g. Rohan Sharma" 
+                   class="w-full bg-white rounded-2xl pl-10 pr-4 py-3.5 text-sm text-ink font-medium border border-primary/20 focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent shadow-sm placeholder:text-ink-subtle/70 transition"
+                   autocomplete="name" />
+          </div>
+        </div>
+
+        <!-- Roll Number Input -->
+        <div>
+          <label for="studentRoll" class="block text-xs font-bold uppercase tracking-wider text-ink-muted mb-1.5">
+            College Roll Number / ID
+          </label>
+          <div class="relative">
+            <span class="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-ink-subtle text-base">
+              🪪
+            </span>
+            <input type="text" 
+                   id="studentRoll" 
+                   name="studentRoll"
+                   placeholder="e.g. IT-2024-042" 
+                   class="w-full bg-white rounded-2xl pl-10 pr-4 py-3.5 text-sm text-ink font-medium border border-primary/20 focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent shadow-sm placeholder:text-ink-subtle/70 uppercase tracking-wide transition"
+                   autocomplete="off" />
+          </div>
+        </div>
+
+        <!-- Student Helper Note -->
+        <div class="p-3 bg-primary-light/60 border border-primary/15 rounded-2xl flex items-start gap-2.5 text-ink-muted text-xs">
+          <span class="text-sm">💡</span>
+          <p class="leading-relaxed text-[11px]">
+            No password required! Your food tokens will be linked to your Roll Number for pickup.
+          </p>
+        </div>
+
+        <!-- Submit Button -->
+        <button type="submit" 
+                id="studentSubmitBtn"
+                class="w-full mt-2 bg-primary hover:bg-primary-dark active:scale-[0.98] transition-all duration-200 text-white font-bold text-sm py-4 rounded-2xl shadow-button flex items-center justify-center gap-2">
+          <span>Continue to Menu</span>
+          <span>→</span>
+        </button>
+
+      </form>
+
+      <!-- ================================================================= -->
+      <!-- ADMIN LOGIN FORM -->
+      <!-- ================================================================= -->
+      <form id="adminForm" onsubmit="handleAdminLogin(event)" class="hidden space-y-4">
+
+        <!-- Temporary Demo Banner -->
+        <div class="p-3 bg-accent/15 border border-accent/40 rounded-2xl flex items-start gap-2.5 text-ink text-xs">
+          <span class="text-base">🔑</span>
+          <div>
+            <p class="font-bold text-[11px] text-ink">Demo Staff Credentials (Temporary)</p>
+            <p class="text-[11px] text-ink-muted mt-0.5">
+              Username: <code class="bg-white/80 px-1 py-0.5 rounded font-mono font-bold text-primary-dark">admin</code> &nbsp;|&nbsp; 
+              Password: <code class="bg-white/80 px-1 py-0.5 rounded font-mono font-bold text-primary-dark">admin123</code>
+            </p>
+          </div>
+        </div>
+
+        <!-- Admin Username -->
+        <div>
+          <label for="adminUsername" class="block text-xs font-bold uppercase tracking-wider text-ink-muted mb-1.5">
+            Staff Username
+          </label>
+          <div class="relative">
+            <span class="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-ink-subtle text-base">
+              🧑‍🍳
+            </span>
+            <input type="text" 
+                   id="adminUsername" 
+                   name="adminUsername"
+                   placeholder="admin" 
+                   class="w-full bg-white rounded-2xl pl-10 pr-4 py-3.5 text-sm text-ink font-medium border border-primary/20 focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent shadow-sm placeholder:text-ink-subtle/70 transition"
+                   autocomplete="username" />
+          </div>
+        </div>
+
+        <!-- Admin Password -->
+        <div>
+          <label for="adminPassword" class="block text-xs font-bold uppercase tracking-wider text-ink-muted mb-1.5">
+            Staff Password
+          </label>
+          <div class="relative">
+            <span class="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-ink-subtle text-base">
+              🔒
+            </span>
+            <input type="password" 
+                   id="adminPassword" 
+                   name="adminPassword"
+                   placeholder="••••••••" 
+                   class="w-full bg-white rounded-2xl pl-10 pr-12 py-3.5 text-sm text-ink font-medium border border-primary/20 focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent shadow-sm placeholder:text-ink-subtle/70 transition"
+                   autocomplete="current-password" />
+            <button type="button" 
+                    onclick="togglePasswordVisibility()" 
+                    class="absolute inset-y-0 right-0 pr-3.5 flex items-center text-xs font-semibold text-ink-muted hover:text-ink"
+                    aria-label="Toggle password view">
+              <span id="eyeIcon">👁️</span>
+            </button>
+          </div>
+        </div>
+
+        <!-- Submit Button -->
+        <button type="submit" 
+                id="adminSubmitBtn"
+                class="w-full mt-2 bg-primary hover:bg-primary-dark active:scale-[0.98] transition-all duration-200 text-white font-bold text-sm py-4 rounded-2xl shadow-button flex items-center justify-center gap-2">
+          <span>Enter Admin Portal</span>
+          <span>→</span>
+        </button>
+
+      </form>
+
+    </div>
+
+    <!-- Bottom Footer Links -->
+    <footer class="pt-6 pb-2 text-center">
+      <p class="text-xs text-ink-muted">
+        Need help with your roll number or order?
+      </p>
+      <p class="text-[11px] text-ink-muted/80 mt-1">
+        Visit the canteen billing counter or ask cafeteria staff.
+      </p>
+    </footer>
+
+  </main>
+
+  <!-- Central Storage Layer -->
+  <script src="storage.js"></script>
+
+  <script>
+    // Current Active Tab: 'student' or 'admin'
+    let currentTab = 'student';
+
+    // Switch between Student and Admin tabs
+    function switchTab(role) {
+      currentTab = role;
+      clearAlert();
+
+      const studentTab = document.getElementById('tabStudentBtn');
+      const adminTab = document.getElementById('tabAdminBtn');
+      const studentForm = document.getElementById('studentForm');
+      const adminForm = document.getElementById('adminForm');
+
+      if (role === 'student') {
+        // Activate student tab styles
+        studentTab.className = 'flex-1 py-2.5 rounded-xl font-bold text-sm transition-all duration-200 flex items-center justify-center gap-2 bg-white text-ink shadow-sm';
+        adminTab.className = 'flex-1 py-2.5 rounded-xl font-bold text-sm transition-all duration-200 flex items-center justify-center gap-2 text-ink-muted hover:text-ink';
+        studentForm.classList.remove('hidden');
+        adminForm.classList.add('hidden');
+        document.getElementById('studentName').focus();
+      } else {
+        // Activate admin tab styles
+        adminTab.className = 'flex-1 py-2.5 rounded-xl font-bold text-sm transition-all duration-200 flex items-center justify-center gap-2 bg-white text-ink shadow-sm';
+        studentTab.className = 'flex-1 py-2.5 rounded-xl font-bold text-sm transition-all duration-200 flex items-center justify-center gap-2 text-ink-muted hover:text-ink';
+        adminForm.classList.remove('hidden');
+        studentForm.classList.add('hidden');
+        document.getElementById('adminUsername').focus();
+      }
+    }
+
+    // Toggle password view
+    function togglePasswordVisibility() {
+      const passInput = document.getElementById('adminPassword');
+      if (passInput.type === 'password') {
+        passInput.type = 'text';
+      } else {
+        passInput.type = 'password';
+      }
+    }
+
+    // Display friendly error or success alert
+    function showAlert(title, message, isSuccess = false) {
+      const box = document.getElementById('alertBox');
+      const titleEl = document.getElementById('alertTitle');
+      const msgEl = document.getElementById('alertMessage');
+      const iconEl = document.getElementById('alertIcon');
+
+      titleEl.textContent = title;
+      msgEl.textContent = message;
+
+      if (isSuccess) {
+        box.className = 'mb-5 p-3 rounded-2xl text-xs font-medium border flex items-start gap-2.5 bg-emerald-50 border-emerald-300 text-emerald-800';
+        iconEl.textContent = '🎉';
+      } else {
+        box.className = 'shake mb-5 p-3 rounded-2xl text-xs font-medium border flex items-start gap-2.5 bg-rose-50 border-rose-300 text-rose-800';
+        iconEl.textContent = '⚠️';
+      }
+
+      box.classList.remove('hidden');
+    }
+
+    // Clear alert
+    function clearAlert() {
+      const box = document.getElementById('alertBox');
+      box.classList.add('hidden');
+      box.classList.remove('shake');
+    }
+
+    // Handle Student Form Submission
+    function handleStudentLogin(event) {
+      event.preventDefault();
+      clearAlert();
+
+      const nameInput = document.getElementById('studentName');
+      const rollInput = document.getElementById('studentRoll');
+
+      const name = nameInput.value.trim();
+      const rollNo = rollInput.value.trim();
+
+      // Validation
+      if (!name && !rollNo) {
+        showAlert('Missing details', 'Please enter your name and college roll number.');
+        nameInput.focus();
+        return;
+      }
+
+      if (!name || name.length < 2) {
+        showAlert('Name required', 'Please enter your full name (at least 2 letters).');
+        nameInput.focus();
+        return;
+      }
+
+      if (!rollNo || rollNo.length < 2) {
+        showAlert('Roll number required', 'Please enter your valid roll number (e.g. IT-101).');
+        rollInput.focus();
+        return;
+      }
+
+      // Save Student to storage.js
+      saveCurrentUser({
+        role: 'student',
+        name: name,
+        rollNo: rollNo.toUpperCase()
+      });
+
+      showAlert('Welcome!', `Logged in as ${name}. Redirecting to menu...`, true);
+
+      // Disable button during transition
+      const btn = document.getElementById('studentSubmitBtn');
+      btn.disabled = true;
+      btn.innerHTML = '<span>Opening Menu...</span> <span>⏳</span>';
+
+      // Redirect to student-menu.html after brief visual feedback
+      setTimeout(() => {
+        window.location.href = 'student-menu.html';
+      }, 700);
+    }
+
+    // Handle Admin Form Submission
+    function handleAdminLogin(event) {
+      event.preventDefault();
+      clearAlert();
+
+      const userInput = document.getElementById('adminUsername');
+      const passInput = document.getElementById('adminPassword');
+
+      const username = userInput.value.trim();
+      const password = passInput.value.trim();
+
+      // Validation for empty inputs
+      if (!username || !password) {
+        showAlert('Missing credentials', 'Please enter both canteen staff username and password.');
+        if (!username) userInput.focus(); else passInput.focus();
+        return;
+      }
+
+      // Temporary hardcoded check for demo as requested: admin / admin123
+      if (username === 'admin' && password === 'admin123') {
+        saveCurrentUser({
+          role: 'admin',
+          username: 'admin',
+          name: 'Canteen Manager'
+        });
+
+        showAlert('Access Granted', 'Welcome to Canteen Staff Portal. Opening dashboard...', true);
+
+        const btn = document.getElementById('adminSubmitBtn');
+        btn.disabled = true;
+        btn.innerHTML = '<span>Opening Dashboard...</span> <span>⏳</span>';
+
+        // Redirect to overview.html after brief visual feedback
+        setTimeout(() => {
+          window.location.href = 'overview.html';
+        }, 700);
+      } else {
+        showAlert('Login Failed', 'Incorrect username or password. For demo, use: admin / admin123');
+        passInput.focus();
+      }
+    }
+
+    // Prefill if returning user exists
+    document.addEventListener('DOMContentLoaded', () => {
+      const user = getCurrentUser();
+      if (user && user.role === 'student') {
+        if (user.name) document.getElementById('studentName').value = user.name;
+        if (user.rollNo) document.getElementById('studentRoll').value = user.rollNo;
+      }
+    });
+  </script>
+
+</body>
+</html>

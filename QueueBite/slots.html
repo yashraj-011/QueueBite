@@ -1,0 +1,1644 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>QueueBite Admin – Time Slots Management</title>
+  <!-- Tailwind CSS via CDN for base utilities -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <!-- QueueBite Unified Storage Layer -->
+  <script src="storage.js"></script>
+  <!-- Plus Jakarta Sans Font (matches login, admin, overview, orders & queue) -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+
+  <style>
+    /* ========================================================================= */
+    /* THEME: "Cocoa and Cream" (Exact palette from admin.html & orders.html)    */
+    /* ========================================================================= */
+    :root {
+      --bg-page:        #FBF4E9;   /* main cream background */
+      --bg-panel:       #EFE3D3;   /* sidebar, filter bar, toggle tracks, chips */
+      --bg-card:        #FFFFFF;   /* cards, inputs, modal */
+      --bg-notice:      #FAE8D0;   /* info boxes, highlights, tag backgrounds */
+      --border-notice:  #F0C888;   /* border of info boxes */
+      --border-soft:    #E4D6C3;   /* normal card and input borders */
+      --text-dark:      #2F2118;   /* headings and main text */
+      --text-muted:     #6B5645;   /* labels, secondary text */
+      --text-placeholder: #B9AA9A; /* placeholder text */
+      --primary:        #8B5E3C;   /* main buttons, active sidebar item, focused input border */
+      --primary-hover:  #774D2F;   /* button hover */
+      --accent:         #E9A23B;   /* mustard: Almost full badge, highlights */
+      --success:        #4F7A4A;   /* Available badge, available progress bar */
+      --success-bg:     #E3EFDC;
+      --danger:         #B3453A;   /* Full badge, delete button */
+      --danger-bg:      #F7DEDA;
+      --neutral-bg:     #E4DDD3;   /* Blocked and Past badge */
+    }
+
+    body {
+      font-family: 'Plus Jakarta Sans', sans-serif;
+      background-color: var(--bg-page);
+      color: var(--text-dark);
+    }
+
+    /* Modal Backdrop */
+    dialog::backdrop {
+      background: rgba(47, 33, 24, 0.45);
+      backdrop-filter: blur(3px);
+    }
+
+    /* Smooth dialog open animation */
+    dialog[open] {
+      animation: dialogZoom 0.2s ease-out forwards;
+    }
+
+    @keyframes dialogZoom {
+      from {
+        opacity: 0;
+        transform: scale(0.96) translateY(8px);
+      }
+      to {
+        opacity: 1;
+        transform: scale(1) translateY(0);
+      }
+    }
+
+    /* Input focus styling: 2px primary border */
+    input:focus, select:focus, textarea:focus {
+      outline: none !important;
+      border-color: var(--primary) !important;
+      box-shadow: 0 0 0 2px rgba(139, 94, 60, 0.2) !important;
+    }
+
+    input::placeholder {
+      color: var(--text-placeholder);
+    }
+
+    /* Primary buttons */
+    .btn-primary {
+      background-color: var(--primary);
+      color: #FFFFFF;
+      border-radius: 14px;
+      box-shadow: 0 4px 14px -2px rgba(139, 94, 60, 0.25);
+      transition: all 0.2s ease;
+      cursor: pointer;
+    }
+    .btn-primary:hover {
+      background-color: var(--primary-hover);
+      box-shadow: 0 6px 18px -2px rgba(139, 94, 60, 0.35);
+    }
+    .btn-primary:active {
+      transform: scale(0.98);
+    }
+
+    /* Navigation item hover */
+    .nav-link:hover {
+      background-color: rgba(255, 255, 255, 0.6);
+      color: var(--text-dark);
+    }
+
+    /* Dashboard cards */
+    .dashboard-card {
+      background-color: var(--bg-card);
+      border: 1px solid var(--border-soft);
+      border-radius: 18px;
+      box-shadow: 0 4px 18px -2px rgba(47, 33, 24, 0.05);
+      transition: all 0.2s ease;
+    }
+
+    /* Past slot faded appearance */
+    .slot-past {
+      opacity: 0.62;
+      background-color: rgba(228, 221, 211, 0.35) !important;
+      border-style: dashed !important;
+    }
+
+    /* Blocked slot subtle styling */
+    .slot-blocked {
+      background-color: rgba(239, 227, 211, 0.5) !important;
+      border-color: var(--border-soft) !important;
+    }
+
+    /* Custom scrollbars */
+    .no-scrollbar::-webkit-scrollbar {
+      display: none;
+    }
+    .no-scrollbar {
+      -ms-overflow-style: none;
+      scrollbar-width: none;
+    }
+  </style>
+</head>
+
+<body class="min-h-screen flex flex-col md:flex-row antialiased">
+
+  <!-- ========================================================================= -->
+  <!-- SIDEBAR NAVIGATION (Desktop: Left Bar / Mobile: Top Horizontal Scroll)     -->
+  <!-- ========================================================================= -->
+  <aside class="w-full md:w-64 border-b md:border-b-0 md:border-r flex-shrink-0 z-30 flex flex-col"
+         style="background-color: var(--bg-panel); border-color: var(--border-soft);">
+    
+    <!-- Brand / Canteen Title -->
+    <div class="p-4 md:p-6 border-b flex items-center justify-between" style="border-color: var(--border-soft);">
+      <div class="flex items-center gap-3">
+        <div class="w-10 h-10 rounded-2xl flex items-center justify-center text-white text-xl shadow-md"
+             style="background-color: var(--primary); box-shadow: 0 4px 14px rgba(139, 94, 60, 0.3);">
+          🍛
+        </div>
+        <div>
+          <h1 class="font-extrabold text-lg leading-tight" style="color: var(--text-dark);">QueueBite</h1>
+          <p class="text-xs font-bold" style="color: var(--primary);">Staff Admin Portal</p>
+        </div>
+      </div>
+      <span class="inline-flex md:hidden text-xs font-bold px-2.5 py-0.5 rounded-full"
+            style="background-color: var(--bg-notice); color: var(--text-dark); border: 1px solid var(--border-notice);">
+        Canteen
+      </span>
+    </div>
+
+    <!-- Navigation Links -->
+    <nav class="p-3 md:p-4 flex md:flex-col gap-1.5 overflow-x-auto no-scrollbar whitespace-nowrap md:overflow-visible">
+      <!-- Overview Link -->
+      <a href="overview.html" 
+         class="nav-link flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-sm font-semibold transition"
+         style="color: var(--text-muted);">
+        <span class="text-base">📊</span>
+        <span>Overview</span>
+      </a>
+
+      <!-- Orders Link -->
+      <a href="orders.html" 
+         class="nav-link flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-sm font-semibold transition"
+         style="color: var(--text-muted);">
+        <span class="text-base">🧾</span>
+        <span>Orders</span>
+      </a>
+
+      <!-- Queue Link -->
+      <a href="queue.html" 
+         class="nav-link flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-sm font-semibold transition"
+         style="color: var(--text-muted);">
+        <span class="text-base">⏱️</span>
+        <span>Queue</span>
+      </a>
+
+      <!-- Menu Link -->
+      <a href="admin.html" 
+         class="nav-link flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-sm font-semibold transition"
+         style="color: var(--text-muted);">
+        <span class="text-base">🍽️</span>
+        <span>Menu</span>
+      </a>
+
+      <!-- Slots Link (ACTIVE: white pill with dark text) -->
+      <a href="slots.html" 
+         class="flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-sm font-bold shadow-sm transition"
+         style="background-color: var(--bg-card); color: var(--text-dark); box-shadow: 0 2px 8px rgba(47, 33, 24, 0.08);"
+         aria-current="page">
+        <span class="text-base">🕒</span>
+        <span>Slots</span>
+      </a>
+
+      <!-- Logout Link -->
+      <a href="login.html" 
+         onclick="handleLogout(event)"
+         class="flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-sm font-bold md:mt-auto transition hover:opacity-85"
+         style="color: var(--danger);">
+        <span class="text-base">🚪</span>
+        <span>Logout</span>
+      </a>
+    </nav>
+
+    <!-- Sidebar Footer (Desktop Only) -->
+    <div class="hidden md:block p-4 mt-auto border-t" style="background-color: var(--bg-notice); border-color: var(--border-soft);">
+      <div class="text-xs">
+        <p class="font-bold" style="color: var(--text-dark);">Pickup Dispatch</p>
+        <p class="text-[11px] mt-0.5" style="color: var(--text-muted);">Time Slot Capacity & Windows</p>
+      </div>
+    </div>
+  </aside>
+
+  <!-- ========================================================================= -->
+  <!-- MAIN WORKSPACE                                                            -->
+  <!-- ========================================================================= -->
+  <main class="flex-1 flex flex-col min-w-0 overflow-y-auto">
+
+    <!-- Top Sticky Header -->
+    <header class="border-b px-4 md:px-8 py-5 sticky top-0 z-20"
+            style="background-color: var(--bg-page); border-color: var(--border-soft);">
+      <div class="flex flex-col md:flex-row md:items-center justify-between gap-4">
+        <div>
+          <div class="flex items-center gap-3 flex-wrap">
+            <h2 class="text-2xl md:text-3xl font-extrabold tracking-tight" style="color: var(--text-dark);">Slots</h2>
+            <!-- Canteen Open / Closed status indicator -->
+            <span id="canteenStatusIndicator" class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold shadow-sm">
+              <!-- Rendered via JS -->
+            </span>
+          </div>
+          <p class="text-xs md:text-sm mt-0.5" style="color: var(--text-muted);">
+            Manage student pickup time slots, kitchen capacity, breaks, and buffer windows
+          </p>
+        </div>
+
+        <!-- Date Navigation Bar -->
+        <div class="flex items-center gap-2 flex-wrap">
+          <button type="button" 
+                  onclick="changeDate(-1)" 
+                  class="p-2.5 rounded-xl border font-bold text-sm transition hover:opacity-80 active:scale-95 shadow-sm"
+                  style="background-color: var(--bg-panel); border-color: var(--border-soft); color: var(--text-dark);"
+                  title="Previous day">
+            ◀
+          </button>
+          <input type="date" 
+                 id="selectedDateInput" 
+                 onchange="setDate(this.value)" 
+                 class="px-3.5 py-2 rounded-xl border text-sm font-bold shadow-sm transition"
+                 style="background-color: var(--bg-card); border-color: var(--border-soft); color: var(--text-dark);" />
+          <button type="button" 
+                  onclick="changeDate(1)" 
+                  class="p-2.5 rounded-xl border font-bold text-sm transition hover:opacity-80 active:scale-95 shadow-sm"
+                  style="background-color: var(--bg-panel); border-color: var(--border-soft); color: var(--text-dark);"
+                  title="Next day">
+            ▶
+          </button>
+          <button type="button" 
+                  onclick="goToToday()" 
+                  class="px-3 py-2 rounded-xl border font-bold text-xs transition hover:opacity-80 active:scale-95 shadow-sm"
+                  style="background-color: var(--bg-panel); border-color: var(--border-soft); color: var(--primary);">
+            Today
+          </button>
+        </div>
+      </div>
+
+      <!-- Live Summary Chips Row (For the Selected Date) -->
+      <div class="grid grid-cols-2 sm:grid-cols-5 gap-3 mt-5">
+        <!-- Total Slots -->
+        <div class="border rounded-2xl p-3 flex items-center justify-between shadow-sm"
+             style="background-color: var(--bg-panel); border-color: var(--border-soft);">
+          <div>
+            <p class="text-[11px] font-bold uppercase tracking-wider" style="color: var(--text-muted);">Total Slots</p>
+            <p id="chipTotalSlots" class="text-2xl font-extrabold mt-0.5" style="color: var(--text-dark);">0</p>
+          </div>
+          <span class="text-2xl">🕒</span>
+        </div>
+
+        <!-- Total Capacity -->
+        <div class="border rounded-2xl p-3 flex items-center justify-between shadow-sm"
+             style="background-color: var(--bg-card); border-color: var(--border-soft);">
+          <div>
+            <p class="text-[11px] font-bold uppercase tracking-wider" style="color: var(--text-muted);">Total Capacity</p>
+            <p id="chipTotalCapacity" class="text-2xl font-extrabold mt-0.5" style="color: var(--primary);">0</p>
+          </div>
+          <span class="text-2xl">📦</span>
+        </div>
+
+        <!-- Booked Places -->
+        <div class="border rounded-2xl p-3 flex items-center justify-between shadow-sm"
+             style="background-color: var(--bg-notice); border-color: var(--border-notice);">
+          <div>
+            <p class="text-[11px] font-bold uppercase tracking-wider" style="color: var(--text-dark);">Booked</p>
+            <p id="chipBooked" class="text-2xl font-extrabold mt-0.5" style="color: var(--text-dark);">0</p>
+          </div>
+          <span class="text-2xl">🧾</span>
+        </div>
+
+        <!-- Free Places -->
+        <div class="border rounded-2xl p-3 flex items-center justify-between shadow-sm"
+             style="background-color: var(--success-bg); border-color: var(--success);">
+          <div>
+            <p class="text-[11px] font-bold uppercase tracking-wider" style="color: var(--success);">Free Places</p>
+            <p id="chipFreePlaces" class="text-2xl font-extrabold mt-0.5" style="color: var(--success);">0</p>
+          </div>
+          <span class="text-2xl">🟢</span>
+        </div>
+
+        <!-- Full Slots -->
+        <div class="col-span-2 sm:col-span-1 border rounded-2xl p-3 flex items-center justify-between shadow-sm"
+             style="background-color: var(--danger-bg); border-color: var(--danger);">
+          <div>
+            <p class="text-[11px] font-bold uppercase tracking-wider" style="color: var(--danger);">Full Slots</p>
+            <p id="chipFullSlots" class="text-2xl font-extrabold mt-0.5" style="color: var(--danger);">0</p>
+          </div>
+          <span class="text-2xl">🔴</span>
+        </div>
+      </div>
+    </header>
+
+    <!-- Content Body -->
+    <div class="p-4 md:p-8 space-y-6">
+
+      <!-- ===================================================================== -->
+      <!-- SLOT SETTINGS CARD & BREAK TIME MANAGER                              -->
+      <!-- ===================================================================== -->
+      <section class="dashboard-card p-5 md:p-6 space-y-5" aria-label="Slot Configuration Settings">
+        <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b pb-4"
+             style="border-color: var(--border-soft);">
+          <div>
+            <h3 class="font-extrabold text-lg flex items-center gap-2" style="color: var(--text-dark);">
+              <span>⚙️</span> Slot Settings & Generation
+            </h3>
+            <p class="text-xs font-semibold mt-0.5" style="color: var(--text-muted);">
+              Configure service timings, interval durations, order buffers and kitchen break periods
+            </p>
+          </div>
+
+          <div class="flex items-center gap-2.5 flex-wrap">
+            <button type="button" 
+                    onclick="saveSettings()" 
+                    class="font-bold text-xs px-4 py-2.5 rounded-xl border transition hover:opacity-90 active:scale-95 shadow-sm"
+                    style="background-color: var(--bg-card); color: var(--primary); border-color: var(--border-soft);">
+              Save settings
+            </button>
+            <button type="button" 
+                    onclick="handleGenerateSlots()" 
+                    class="btn-primary font-bold text-xs px-4 py-2.5 flex items-center gap-1.5 shadow-sm">
+              <span>⚡ Generate slots for this date</span>
+            </button>
+          </div>
+        </div>
+
+        <!-- Settings Form Fields -->
+        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
+          <!-- Opening Time -->
+          <div>
+            <label for="settingOpenTime" class="block text-xs font-bold uppercase tracking-wider mb-1" style="color: var(--text-muted);">
+              Opening Time <span style="color: var(--danger);">*</span>
+            </label>
+            <input type="time" 
+                   id="settingOpenTime" 
+                   value="09:00" 
+                   class="w-full rounded-xl px-3 py-2 text-sm font-semibold transition"
+                   style="background-color: var(--bg-card); border: 1px solid var(--border-soft); color: var(--text-dark);" />
+            <p id="errOpenTime" class="hidden text-xs font-bold mt-1" style="color: var(--danger);">Required</p>
+          </div>
+
+          <!-- Closing Time -->
+          <div>
+            <label for="settingCloseTime" class="block text-xs font-bold uppercase tracking-wider mb-1" style="color: var(--text-muted);">
+              Closing Time <span style="color: var(--danger);">*</span>
+            </label>
+            <input type="time" 
+                   id="settingCloseTime" 
+                   value="16:00" 
+                   class="w-full rounded-xl px-3 py-2 text-sm font-semibold transition"
+                   style="background-color: var(--bg-card); border: 1px solid var(--border-soft); color: var(--text-dark);" />
+            <p id="errCloseTime" class="hidden text-xs font-bold mt-1" style="color: var(--danger);">Must be after opening</p>
+          </div>
+
+          <!-- Slot Duration -->
+          <div>
+            <label for="settingDuration" class="block text-xs font-bold uppercase tracking-wider mb-1" style="color: var(--text-muted);">
+              Slot Duration
+            </label>
+            <select id="settingDuration" 
+                    class="w-full rounded-xl px-3 py-2 text-sm font-semibold transition"
+                    style="background-color: var(--bg-card); border: 1px solid var(--border-soft); color: var(--text-dark);">
+              <option value="5">5 minutes</option>
+              <option value="10" selected>10 minutes</option>
+              <option value="15">15 minutes</option>
+              <option value="20">20 minutes</option>
+              <option value="30">30 minutes</option>
+            </select>
+          </div>
+
+          <!-- Default Max Orders -->
+          <div>
+            <label for="settingDefaultMax" class="block text-xs font-bold uppercase tracking-wider mb-1" style="color: var(--text-muted);">
+              Orders / Slot <span style="color: var(--danger);">*</span>
+            </label>
+            <input type="number" 
+                   id="settingDefaultMax" 
+                   min="1" 
+                   value="8" 
+                   class="w-full rounded-xl px-3 py-2 text-sm font-semibold transition"
+                   style="background-color: var(--bg-card); border: 1px solid var(--border-soft); color: var(--text-dark);" />
+            <p id="errDefaultMax" class="hidden text-xs font-bold mt-1" style="color: var(--danger);">Min 1</p>
+          </div>
+
+          <!-- Last Order Buffer -->
+          <div>
+            <label for="settingBuffer" class="block text-xs font-bold uppercase tracking-wider mb-1" style="color: var(--text-muted);">
+              Stop Orders Buffer
+            </label>
+            <div class="relative">
+              <input type="number" 
+                     id="settingBuffer" 
+                     min="0" 
+                     value="15" 
+                     placeholder="15" 
+                     class="w-full rounded-xl pl-3 pr-12 py-2 text-sm font-semibold transition"
+                     style="background-color: var(--bg-card); border: 1px solid var(--border-soft); color: var(--text-dark);" />
+              <span class="absolute inset-y-0 right-0 pr-3 flex items-center text-xs font-bold pointer-events-none" style="color: var(--text-muted);">
+                mins
+              </span>
+            </div>
+            <p class="text-[10px] mt-0.5" style="color: var(--text-muted);">Before slot start</p>
+          </div>
+        </div>
+
+        <!-- BREAK PERIODS SECTION (Up to 3 breaks skipped during generation) -->
+        <div class="pt-3 border-t space-y-2.5" style="border-color: var(--border-soft);">
+          <div class="flex items-center justify-between">
+            <div>
+              <h4 class="text-xs font-extrabold uppercase tracking-wider" style="color: var(--text-dark);">
+                ☕ Break Periods (Skipped during slot generation)
+              </h4>
+              <p class="text-[11px]" style="color: var(--text-muted);">
+                Add lunch or tea intervals that will not receive student order slots (max 3 breaks).
+              </p>
+            </div>
+            <button type="button" 
+                    id="btnAddBreak"
+                    onclick="handleAddBreak()" 
+                    class="text-xs font-bold px-3 py-1.5 rounded-lg border transition hover:opacity-85 shadow-xs"
+                    style="background-color: var(--bg-panel); color: var(--text-dark); border-color: var(--border-soft);">
+              + Add break
+            </button>
+          </div>
+
+          <!-- Break Period Inputs Container -->
+          <div id="breaksContainer" class="flex flex-wrap gap-3">
+            <!-- Dynamically populated via JS -->
+          </div>
+        </div>
+      </section>
+
+      <!-- ===================================================================== -->
+      <!-- BULK ACTIONS & ADD SINGLE SLOT TOOLBAR                                -->
+      <!-- ===================================================================== -->
+      <section class="p-4 rounded-2xl border shadow-sm flex flex-col md:flex-row md:items-center justify-between gap-4"
+               style="background-color: var(--bg-panel); border-color: var(--border-soft);">
+        <!-- Left: Status and Single Slot trigger -->
+        <div class="flex items-center gap-3 flex-wrap">
+          <span class="text-xs font-extrabold tracking-wide uppercase" style="color: var(--text-muted);">
+            Bulk Tools
+          </span>
+          <button type="button" 
+                  onclick="openAddSlotDialog()" 
+                  class="btn-primary text-xs font-bold px-3.5 py-2 flex items-center gap-1.5 shadow-sm">
+            <span>+</span> Add single slot
+          </button>
+        </div>
+
+        <!-- Right: Bulk Actions Controls -->
+        <div class="flex items-center gap-2.5 flex-wrap">
+          <!-- Capacity for all -->
+          <div class="flex items-center gap-1.5">
+            <input type="number" 
+                   id="bulkCapacityInput" 
+                   min="1" 
+                   value="10" 
+                   class="w-16 rounded-xl px-2.5 py-1.5 text-xs font-bold transition shadow-xs text-center"
+                   style="background-color: var(--bg-card); border: 1px solid var(--border-soft); color: var(--text-dark);"
+                   title="Capacity to set for all slots" />
+            <button type="button" 
+                    onclick="bulkSetCapacity()" 
+                    class="text-xs font-bold px-3 py-1.5 rounded-xl border transition hover:opacity-85 shadow-xs"
+                    style="background-color: var(--bg-card); color: var(--text-dark); border-color: var(--border-soft);">
+              Set capacity for all
+            </button>
+          </div>
+
+          <!-- Block all remaining -->
+          <button type="button" 
+                  onclick="bulkBlockRemaining()" 
+                  class="text-xs font-bold px-3 py-1.5 rounded-xl border transition hover:opacity-85 shadow-xs"
+                  style="background-color: var(--bg-notice); color: var(--text-dark); border-color: var(--border-notice);">
+            Block all remaining
+          </button>
+
+          <!-- Unblock all -->
+          <button type="button" 
+                  onclick="bulkUnblockAll()" 
+                  class="text-xs font-bold px-3 py-1.5 rounded-xl border transition hover:opacity-85 shadow-xs"
+                  style="background-color: var(--bg-card); color: var(--success); border-color: var(--border-soft);">
+            Unblock all
+          </button>
+        </div>
+      </section>
+
+      <!-- ===================================================================== -->
+      <!-- SLOTS GRID FOR SELECTED DATE                                          -->
+      <!-- ===================================================================== -->
+      <section aria-label="Slots List">
+        <div class="flex items-center justify-between mb-4">
+          <h3 class="text-lg font-extrabold" style="color: var(--text-dark);">
+            Time Slots for <span id="displaySelectedDate" class="underline decoration-[var(--primary)] decoration-2">Today</span>
+          </h3>
+          <span class="text-xs font-semibold" style="color: var(--text-muted);">
+            Auto-refreshes every 15s &bull; Live cross-tab sync
+          </span>
+        </div>
+
+        <!-- Grid Container -->
+        <div id="slotsGrid" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+          <!-- Rendered dynamically via renderSlots() -->
+        </div>
+
+        <!-- EMPTY STATE (When no slots exist for the date) -->
+        <div id="slotsEmptyState" class="hidden border border-dashed rounded-3xl p-12 text-center max-w-lg mx-auto my-8 shadow-sm"
+             style="background-color: var(--bg-card); border-color: var(--border-soft);">
+          <div class="w-16 h-16 rounded-2xl flex items-center justify-center text-3xl mx-auto mb-4 shadow-sm"
+               style="background-color: var(--bg-notice); color: var(--primary);">
+            🕒
+          </div>
+          <h3 class="text-lg font-bold" style="color: var(--text-dark);">No slots for this date yet</h3>
+          <p class="text-sm mt-1" style="color: var(--text-muted);">
+            Set the timings above and click Generate slots.
+          </p>
+          <div class="mt-5 flex items-center justify-center gap-3">
+            <button type="button" 
+                    onclick="generateSlots()" 
+                    class="btn-primary font-bold text-xs px-5 py-2.5 rounded-xl shadow-sm">
+              Generate slots
+            </button>
+            <button type="button" 
+                    onclick="openAddSlotDialog()" 
+                    class="font-bold text-xs px-4 py-2.5 rounded-xl border shadow-sm transition hover:opacity-85"
+                    style="background-color: var(--bg-panel); color: var(--text-dark); border-color: var(--border-soft);">
+              + Add single slot
+            </button>
+          </div>
+        </div>
+      </section>
+
+    </div>
+  </main>
+
+  <!-- ========================================================================= -->
+  <!-- MODAL 1: VIEW ORDERS IN SLOT (<dialog>)                                   -->
+  <!-- ========================================================================= -->
+  <dialog id="slotOrdersDialog" class="p-0 border-0 shadow-2xl w-full max-w-md m-auto overflow-hidden rounded-2xl"
+          style="background-color: var(--bg-card); border: 1px solid var(--border-soft);">
+    <!-- Modal Header -->
+    <div class="px-5 py-4 border-b flex items-center justify-between"
+         style="background-color: var(--bg-panel); border-color: var(--border-soft);">
+      <div>
+        <h3 id="slotOrdersModalTitle" class="text-base font-extrabold" style="color: var(--text-dark);">
+          Slot Orders
+        </h3>
+        <p id="slotOrdersModalSubtitle" class="text-xs font-semibold" style="color: var(--text-muted);">
+          Student pickups booked for this window
+        </p>
+      </div>
+      <button type="button" 
+              onclick="closeSlotOrdersDialog()" 
+              class="text-lg font-bold p-1 rounded-lg hover:opacity-75 focus:outline-none"
+              style="color: var(--text-muted);"
+              aria-label="Close dialog">
+        ✕
+      </button>
+    </div>
+
+    <!-- Modal Content: List of orders -->
+    <div id="slotOrdersList" class="p-5 max-h-[60vh] overflow-y-auto space-y-3">
+      <!-- Injected dynamically via openSlotOrders() -->
+    </div>
+
+    <!-- Modal Footer -->
+    <div class="px-5 py-3 border-t flex justify-end" style="border-color: var(--border-soft);">
+      <button type="button" 
+              onclick="closeSlotOrdersDialog()" 
+              class="text-xs font-bold px-4 py-2 rounded-xl transition hover:opacity-85"
+              style="background-color: var(--bg-panel); color: var(--text-dark); border: 1px solid var(--border-soft);">
+        Close
+      </button>
+    </div>
+  </dialog>
+
+  <!-- ========================================================================= -->
+  <!-- MODAL 2: ADD SINGLE SLOT (<dialog>)                                       -->
+  <!-- ========================================================================= -->
+  <dialog id="addSlotDialog" class="p-0 border-0 shadow-2xl w-full max-w-md m-auto overflow-hidden rounded-2xl"
+          style="background-color: var(--bg-card); border: 1px solid var(--border-soft);">
+    <div class="px-5 py-4 border-b flex items-center justify-between"
+         style="background-color: var(--bg-panel); border-color: var(--border-soft);">
+      <h3 class="text-base font-extrabold" style="color: var(--text-dark);">
+        Add Single Slot
+      </h3>
+      <button type="button" 
+              onclick="closeAddSlotDialog()" 
+              class="text-lg font-bold p-1 rounded-lg hover:opacity-75 focus:outline-none"
+              style="color: var(--text-muted);"
+              aria-label="Close dialog">
+        ✕
+      </button>
+    </div>
+
+    <form onsubmit="handleAddSlotSubmit(event)" class="p-5 space-y-4">
+      <div>
+        <label class="block text-xs font-bold uppercase tracking-wider mb-1" style="color: var(--text-muted);">
+          Date
+        </label>
+        <input type="date" 
+               id="newSlotDate" 
+               readonly 
+               class="w-full rounded-xl px-3.5 py-2 text-sm font-semibold opacity-75"
+               style="background-color: var(--bg-panel); border: 1px solid var(--border-soft); color: var(--text-dark);" />
+      </div>
+
+      <div class="grid grid-cols-2 gap-3">
+        <div>
+          <label for="newSlotStart" class="block text-xs font-bold uppercase tracking-wider mb-1" style="color: var(--text-muted);">
+            Start Time <span style="color: var(--danger);">*</span>
+          </label>
+          <input type="time" 
+                 id="newSlotStart" 
+                 required 
+                 class="w-full rounded-xl px-3 py-2 text-sm font-semibold transition"
+                 style="background-color: var(--bg-card); border: 1px solid var(--border-soft); color: var(--text-dark);" />
+        </div>
+        <div>
+          <label for="newSlotEnd" class="block text-xs font-bold uppercase tracking-wider mb-1" style="color: var(--text-muted);">
+            End Time <span style="color: var(--danger);">*</span>
+          </label>
+          <input type="time" 
+                 id="newSlotEnd" 
+                 required 
+                 class="w-full rounded-xl px-3 py-2 text-sm font-semibold transition"
+                 style="background-color: var(--bg-card); border: 1px solid var(--border-soft); color: var(--text-dark);" />
+        </div>
+      </div>
+
+      <div>
+        <label for="newSlotCapacity" class="block text-xs font-bold uppercase tracking-wider mb-1" style="color: var(--text-muted);">
+          Capacity (Max Orders) <span style="color: var(--danger);">*</span>
+        </label>
+        <input type="number" 
+               id="newSlotCapacity" 
+               min="1" 
+               value="8" 
+               required 
+               class="w-full rounded-xl px-3.5 py-2 text-sm font-semibold transition"
+               style="background-color: var(--bg-card); border: 1px solid var(--border-soft); color: var(--text-dark);" />
+      </div>
+
+      <!-- Error message container -->
+      <div id="addSlotError" class="hidden p-3 rounded-xl text-xs font-bold"
+           style="background-color: var(--danger-bg); color: var(--danger); border: 1px solid rgba(179, 69, 58, 0.3);">
+      </div>
+
+      <div class="pt-2 flex justify-end gap-2.5">
+        <button type="button" 
+                onclick="closeAddSlotDialog()" 
+                class="text-xs font-bold px-4 py-2.5 rounded-xl transition hover:opacity-85 shadow-sm"
+                style="background-color: var(--bg-panel); color: var(--text-muted); border: 1px solid var(--border-soft);">
+          Cancel
+        </button>
+        <button type="submit" 
+                class="btn-primary text-xs font-bold px-5 py-2.5 shadow-sm">
+          Add Slot
+        </button>
+      </div>
+    </form>
+  </dialog>
+
+  <!-- ========================================================================= -->
+  <!-- FLOATING TOAST NOTIFICATION CONTAINER                                     -->
+  <!-- ========================================================================= -->
+  <div id="toastContainer" 
+       class="fixed bottom-5 right-5 z-50 flex flex-col gap-2.5 pointer-events-none max-w-sm w-full px-4 sm:px-0">
+  </div>
+
+  <!-- ========================================================================= -->
+  <!-- JAVASCRIPT LOGIC                                                          -->
+  <!-- ========================================================================= -->
+  <script>
+    // State
+    let selectedDate = getTodayString();
+
+    // -------------------------------------------------------------------------
+    // 2. HELPER FUNCTIONS: DATES, TIMES, STRINGS
+    // -------------------------------------------------------------------------
+
+    /**
+     * Returns today's date string in local YYYY-MM-DD format
+     */
+    function getTodayString() {
+      const d = new Date();
+      const year = d.getFullYear();
+      const month = String(d.getMonth() + 1).padStart(2, '0');
+      const day = String(d.getDate()).padStart(2, '0');
+      return `${year}-${month}-${day}`;
+    }
+
+    /**
+     * Converts "HH:MM" 24h format into minutes from midnight
+     */
+    function timeStringToMinutes(timeStr) {
+      if (!timeStr) return 0;
+      const match12 = timeStr.match(/(\d+):(\d+)\s*(AM|PM)?/i);
+      if (!match12) return 0;
+      let h = parseInt(match12[1], 10);
+      const m = parseInt(match12[2], 10);
+      const ampm = match12[3] ? match12[3].toUpperCase() : null;
+      if (ampm === 'PM' && h < 12) h += 12;
+      if (ampm === 'AM' && h === 12) h = 0;
+      return h * 60 + m;
+    }
+
+    /**
+     * Converts minutes from midnight to "HH:MM" 24h format
+     */
+    function minutesToTimeString(minutes) {
+      const h = Math.floor(minutes / 60);
+      const m = minutes % 60;
+      const hh = h < 10 ? '0' + h : String(h);
+      const mm = m < 10 ? '0' + m : String(m);
+      return `${hh}:${mm}`;
+    }
+
+    /**
+     * Formats "HH:MM" 24h into "h:MM AM/PM" 12h display
+     */
+    function formatTime12(time24) {
+      if (!time24) return '';
+      const [hStr, mStr] = time24.split(':');
+      let h = parseInt(hStr, 10);
+      const m = mStr || '00';
+      const ampm = h >= 12 ? 'PM' : 'AM';
+      h = h % 12;
+      h = h ? h : 12;
+      return `${h}:${m} ${ampm}`;
+    }
+
+    /**
+     * Checks if a slot's window has already passed (when date is today or past)
+     */
+    function isSlotPast(slot) {
+      const today = getTodayString();
+      if (slot.date < today) return true;
+      if (slot.date > today) return false;
+
+      // When slot.date is today, compare end time against current clock
+      const now = new Date();
+      const currentMinutes = now.getHours() * 60 + now.getMinutes();
+      const slotEndMinutes = timeStringToMinutes(slot.end);
+      return slotEndMinutes <= currentMinutes;
+    }
+
+    /**
+     * Checks if an order matches a given slot based on date, time and status
+     */
+    function orderMatchesSlot(order, slot) {
+      if (!order || !slot) return false;
+      // Cancelled and Missed orders are excluded
+      if (order.orderStatus === 'Cancelled' || order.orderStatus === 'Missed') return false;
+
+      // Date match check
+      if (order.createdAt) {
+        try {
+          const orderDate = new Date(order.createdAt).toISOString().slice(0, 10);
+          if (orderDate !== slot.date) return false;
+        } catch(e) {}
+      }
+
+      // Time match check
+      const orderMins = timeStringToMinutes(order.slotTime);
+      const slotStartMins = timeStringToMinutes(slot.start);
+      const slotEndMins = timeStringToMinutes(slot.end);
+
+      // Order time falls within slot window [slot.start, slot.end)
+      return (orderMins >= slotStartMins && orderMins < slotEndMins);
+    }
+
+    // -------------------------------------------------------------------------
+    // 3. SETTINGS SAVE HANDLER
+    // -------------------------------------------------------------------------
+
+    /**
+     * Saves slot settings via storage.js saveSlotSettings
+     */
+    async function saveSettings(notify = true) {
+      const openTime = document.getElementById('settingOpenTime').value;
+      const closeTime = document.getElementById('settingCloseTime').value;
+      const duration = parseInt(document.getElementById('settingDuration').value, 10) || 10;
+      const defaultMax = parseInt(document.getElementById('settingDefaultMax').value, 10) || 8;
+      const lastOrderBufferMinutes = parseInt(document.getElementById('settingBuffer').value, 10) || 0;
+
+      // Validation
+      if (timeStringToMinutes(closeTime) <= timeStringToMinutes(openTime)) {
+        document.getElementById('errCloseTime').classList.remove('hidden');
+        showToast('Closing time must be after opening time', 'error');
+        return false;
+      }
+      document.getElementById('errCloseTime').classList.add('hidden');
+
+      if (defaultMax < 1) {
+        document.getElementById('errDefaultMax').classList.remove('hidden');
+        showToast('Default orders per slot must be 1 or more', 'error');
+        return false;
+      }
+      document.getElementById('errDefaultMax').classList.add('hidden');
+
+      // Collect break periods from UI inputs
+      const breaks = [];
+      const breakRows = document.querySelectorAll('.break-row');
+      let breakError = null;
+
+      breakRows.forEach(row => {
+        const start = row.querySelector('.break-start').value;
+        const end = row.querySelector('.break-end').value;
+        if (!start || !end) return;
+
+        const sMins = timeStringToMinutes(start);
+        const eMins = timeStringToMinutes(end);
+
+        if (eMins <= sMins) {
+          breakError = 'Break end time must be after start time';
+          return;
+        }
+
+        const overlap = breaks.some(b => {
+          const bStart = timeStringToMinutes(b.start);
+          const bEnd = timeStringToMinutes(b.end);
+          return !(eMins <= bStart || sMins >= bEnd);
+        });
+
+        if (overlap) {
+          breakError = 'Break periods cannot overlap';
+          return;
+        }
+
+        breaks.push({ start, end });
+      });
+
+      if (breakError) {
+        showToast(breakError, 'error');
+        return false;
+      }
+
+      if (breaks.length > 3) {
+        showToast('Maximum 3 break periods allowed', 'error');
+        return false;
+      }
+
+      const settings = {
+        openTime,
+        closeTime,
+        duration,
+        defaultMax,
+        lastOrderBufferMinutes,
+        breaks
+      };
+
+      try {
+        await saveSlotSettings(settings);
+        if (notify) {
+          showToast('Settings saved', 'success');
+        }
+        return true;
+      } catch (err) {
+        showToast(err.message || 'Error saving settings', 'error');
+        return false;
+      }
+    }
+
+    // -------------------------------------------------------------------------
+    // 4. CORE WORKFLOW: LOAD SLOTS, SUMMARY & RENDER
+    // -------------------------------------------------------------------------
+
+    /**
+     * Main coordinator function: syncs counts, updates header, and renders
+     */
+    async function loadSlots() {
+      // 1. Sync booked counts from cubite_orders via storage.js
+      await syncBookedCounts();
+
+      // 2. Render Canteen Open / Closed indicator
+      await renderCanteenIndicator();
+
+      // 3. Render Date Picker value
+      const dateInput = document.getElementById('selectedDateInput');
+      if (dateInput) dateInput.value = selectedDate;
+
+      const displayLabel = document.getElementById('displaySelectedDate');
+      if (displayLabel) {
+        displayLabel.textContent = selectedDate === getTodayString() ? 'Today (' + selectedDate + ')' : selectedDate;
+      }
+
+      // 4. Render Summary Chips for the selected date
+      await renderSummary();
+
+      // 5. Render Slots List
+      await renderSlots();
+    }
+
+    /**
+     * Renders Canteen Open / Closed pill indicator from storage.js isCanteenOpen
+     */
+    async function renderCanteenIndicator() {
+      const indicator = document.getElementById('canteenStatusIndicator');
+      if (!indicator) return;
+
+      const isOpen = await isCanteenOpen();
+
+      if (isOpen) {
+        indicator.style.backgroundColor = 'var(--success-bg)';
+        indicator.style.color = 'var(--success)';
+        indicator.style.border = '1px solid var(--success)';
+        indicator.innerHTML = `<span class="w-2 h-2 rounded-full animate-pulse" style="background-color: var(--success);"></span> Canteen Open`;
+      } else {
+        indicator.style.backgroundColor = 'var(--danger-bg)';
+        indicator.style.color = 'var(--danger)';
+        indicator.style.border = '1px solid var(--danger)';
+        indicator.innerHTML = `<span class="w-2 h-2 rounded-full" style="background-color: var(--danger);"></span> Canteen Closed`;
+      }
+    }
+
+    /**
+     * Renders summary statistics for the selected date
+     */
+    async function renderSummary() {
+      const allSlots = await getSlots();
+      const slotsForDate = allSlots.filter(s => s.date === selectedDate);
+
+      const totalSlots = slotsForDate.length;
+      let totalCapacity = 0;
+      let booked = 0;
+      let fullSlots = 0;
+
+      slotsForDate.forEach(s => {
+        totalCapacity += s.maxOrders;
+        booked += (s.bookedCount || 0);
+        if (s.bookedCount >= s.maxOrders && !s.blocked) {
+          fullSlots++;
+        }
+      });
+
+      const freePlaces = Math.max(0, totalCapacity - booked);
+
+      document.getElementById('chipTotalSlots').textContent = totalSlots;
+      document.getElementById('chipTotalCapacity').textContent = totalCapacity;
+      document.getElementById('chipBooked').textContent = booked;
+      document.getElementById('chipFreePlaces').textContent = freePlaces;
+      document.getElementById('chipFullSlots').textContent = fullSlots;
+    }
+
+    /**
+     * Renders the grid of slot cards for the selected date
+     */
+    async function renderSlots() {
+      const allSlots = await getSlots();
+      const container = document.getElementById('slotsGrid');
+      const emptyState = document.getElementById('slotsEmptyState');
+      if (!container || !emptyState) return;
+
+      // Filter slots for the selected date and sort chronologically
+      const slotsForDate = allSlots
+        .filter(s => s.date === selectedDate)
+        .sort((a, b) => timeStringToMinutes(a.start) - timeStringToMinutes(b.start));
+
+      if (slotsForDate.length === 0) {
+        container.innerHTML = '';
+        emptyState.classList.remove('hidden');
+        return;
+      }
+
+      emptyState.classList.add('hidden');
+
+      container.innerHTML = slotsForDate.map(slot => {
+        const isPast = isSlotPast(slot);
+        const booked = slot.bookedCount || 0;
+        const max = slot.maxOrders;
+        const percentage = Math.min(100, Math.round((booked / max) * 100));
+
+        // Determine status label & badge style
+        let statusLabel = 'Available';
+        let statusStyle = 'background-color: var(--success-bg); color: var(--success); border: 1px solid var(--success);';
+        let barColor = 'var(--success)';
+
+        if (isPast) {
+          statusLabel = 'Past';
+          statusStyle = 'background-color: var(--neutral-bg); color: var(--text-muted);';
+          barColor = 'var(--text-placeholder)';
+        } else if (slot.blocked) {
+          statusLabel = 'Blocked';
+          statusStyle = 'background-color: var(--neutral-bg); color: var(--text-muted); border: 1px solid var(--border-soft);';
+          barColor = 'var(--text-placeholder)';
+        } else if (booked >= max) {
+          statusLabel = 'Full';
+          statusStyle = 'background-color: var(--danger-bg); color: var(--danger); border: 1px solid var(--danger);';
+          barColor = 'var(--danger)';
+        } else if (booked / max >= 0.8) {
+          statusLabel = 'Almost full';
+          statusStyle = 'background-color: var(--bg-notice); color: var(--text-dark); border: 1px solid var(--border-notice);';
+          barColor = 'var(--accent)';
+        }
+
+        // Formatted 12-hour display e.g. "9:00 AM - 9:10 AM"
+        const time12Str = `${formatTime12(slot.start)} – ${formatTime12(slot.end)}`;
+
+        return `
+          <div class="dashboard-card p-4 flex flex-col justify-between gap-3 relative ${isPast ? 'slot-past' : ''} ${slot.blocked && !isPast ? 'slot-blocked' : ''}">
+            <div>
+              <!-- Header: Time and Status Badge -->
+              <div class="flex items-center justify-between gap-2">
+                <div>
+                  <span class="text-base font-extrabold tracking-tight" style="color: var(--text-dark);">
+                    ${slot.start} – ${slot.end}
+                  </span>
+                  <p class="text-[11px] font-bold" style="color: var(--text-muted);">
+                    ${time12Str}
+                  </p>
+                </div>
+                <span class="px-2.5 py-0.5 rounded-full text-[11px] font-extrabold shadow-2xs"
+                      style="${statusStyle}">
+                  ${statusLabel}
+                </span>
+              </div>
+
+              <!-- Progress Bar: Booked / Max -->
+              <div class="mt-3">
+                <div class="flex items-center justify-between text-xs font-bold mb-1">
+                  <span style="color: var(--text-dark);">
+                    ${booked} / ${max} booked
+                  </span>
+                  <span class="text-[11px]" style="color: var(--text-muted);">
+                    ${percentage}%
+                  </span>
+                </div>
+                <div class="w-full h-2 rounded-full overflow-hidden" style="background-color: var(--bg-panel);">
+                  <div class="h-full rounded-full transition-all duration-300"
+                       style="width: ${percentage}%; background-color: ${barColor};"></div>
+                </div>
+              </div>
+
+              <!-- Capacity Editor Controls -->
+              <div class="mt-3.5 pt-2.5 border-t flex items-center justify-between gap-2 text-xs"
+                   style="border-color: var(--border-soft);">
+                <span class="font-bold" style="color: var(--text-muted);">Capacity:</span>
+                <div class="flex items-center gap-1.5">
+                  <button type="button" 
+                          onclick="updateCapacity('${slot.id}', -1)" 
+                          ${isPast ? 'disabled' : ''}
+                          class="w-6 h-6 rounded-lg font-bold border flex items-center justify-center transition hover:opacity-80 active:scale-95 disabled:opacity-40"
+                          style="background-color: var(--bg-panel); border-color: var(--border-soft); color: var(--text-dark);"
+                          title="Decrease capacity by 1">
+                    -
+                  </button>
+                  <input type="number" 
+                         min="${booked}" 
+                         value="${max}" 
+                         ${isPast ? 'disabled' : ''}
+                         onchange="updateCapacityDirect('${slot.id}', this.value)"
+                         class="w-12 text-center rounded-lg py-0.5 text-xs font-extrabold border disabled:opacity-60"
+                         style="background-color: var(--bg-card); border-color: var(--border-soft); color: var(--text-dark);" />
+                  <button type="button" 
+                          onclick="updateCapacity('${slot.id}', 1)" 
+                          ${isPast ? 'disabled' : ''}
+                          class="w-6 h-6 rounded-lg font-bold border flex items-center justify-center transition hover:opacity-80 active:scale-95 disabled:opacity-40"
+                          style="background-color: var(--bg-panel); border-color: var(--border-soft); color: var(--text-dark);"
+                          title="Increase capacity by 1">
+                    +
+                  </button>
+                </div>
+              </div>
+            </div>
+
+            <!-- Card Bottom Action Row -->
+            <div class="pt-2.5 border-t flex items-center justify-between gap-2"
+                 style="border-color: var(--border-soft);">
+              
+              <!-- Block Switch -->
+              <label class="flex items-center gap-1.5 cursor-pointer select-none text-xs font-bold ${isPast ? 'opacity-40 pointer-events-none' : ''}">
+                <input type="checkbox" 
+                       ${slot.blocked ? 'checked' : ''} 
+                       ${isPast ? 'disabled' : ''}
+                       onchange="toggleBlock('${slot.id}')" 
+                       class="w-4 h-4 rounded cursor-pointer"
+                       style="accent-color: var(--primary);" />
+                <span style="color: ${slot.blocked ? 'var(--danger)' : 'var(--text-muted)'};">
+                  ${slot.blocked ? 'Blocked' : 'Block'}
+                </span>
+              </label>
+
+              <!-- Secondary Buttons: View Orders & Delete -->
+              <div class="flex items-center gap-1.5">
+                <button type="button" 
+                        onclick="openSlotOrders('${slot.id}')" 
+                        class="text-xs font-bold px-2.5 py-1 rounded-lg border transition hover:opacity-85 shadow-2xs"
+                        style="background-color: var(--bg-panel); color: var(--text-dark); border-color: var(--border-soft);"
+                        title="View student orders in this slot">
+                  Orders (${booked})
+                </button>
+                <button type="button" 
+                        onclick="handleDeleteSlot('${slot.id}')" 
+                        ${booked > 0 || isPast ? 'disabled' : ''}
+                        class="text-xs font-bold px-2 py-1 rounded-lg border transition hover:opacity-85 shadow-2xs disabled:opacity-30 disabled:cursor-not-allowed"
+                        style="background-color: var(--danger-bg); color: var(--danger); border-color: var(--danger);"
+                        title="${booked > 0 ? 'Cannot delete slot with active bookings' : 'Delete this slot'}">
+                  ✕
+                </button>
+              </div>
+
+            </div>
+          </div>
+        `;
+      }).join('');
+    }
+
+    // -------------------------------------------------------------------------
+    // 5. SLOT GENERATION HANDLER
+    // -------------------------------------------------------------------------
+
+    /**
+     * Handles slot generation trigger for the selected date.
+     * Validates settings, prompts confirmation if date already has slots,
+     * and delegates generation & booked-count sync to storage.js.
+     */
+    async function handleGenerateSlots() {
+      // Ensure settings are valid
+      if (!await saveSettings(false)) return;
+
+      const allSlots = await getSlots();
+      const existingDateSlots = allSlots.filter(s => s.date === selectedDate);
+
+      // Confirm with user if slots already exist for this date
+      if (existingDateSlots.length > 0) {
+        const confirmed = window.confirm(
+          `Slots already exist for ${selectedDate}. Generate new slots?\n(Slots with existing student bookings will be preserved).`
+        );
+        if (!confirmed) return;
+      }
+
+      try {
+        await generateSlots(selectedDate);
+        await loadSlots();
+        showToast('Slots generated', 'success');
+      } catch (err) {
+        showToast(err.message || 'Failed to generate slots', 'error');
+      }
+    }
+
+    // -------------------------------------------------------------------------
+    // 6. SLOT MUTATIONS: CAPACITY, BLOCK, DELETE
+    // -------------------------------------------------------------------------
+
+    /**
+     * Increases or decreases a slot's capacity with - / + buttons
+     */
+    async function updateCapacity(slotId, delta) {
+      const allSlots = await getSlots();
+      const slot = allSlots.find(s => s.id === slotId);
+      if (!slot) return;
+
+      const newCap = slot.maxOrders + delta;
+      try {
+        await updateSlotCapacity(slotId, newCap);
+        await loadSlots();
+        showToast('Capacity updated', 'success');
+      } catch (err) {
+        showToast(err.message || 'Failed to update capacity', 'warning');
+      }
+    }
+
+    /**
+     * Updates capacity directly from number input
+     */
+    async function updateCapacityDirect(slotId, value) {
+      const newCap = parseInt(value, 10);
+      try {
+        await updateSlotCapacity(slotId, newCap);
+        await loadSlots();
+        showToast('Capacity updated', 'success');
+      } catch (err) {
+        showToast(err.message || 'Failed to update capacity', 'warning');
+        await loadSlots(); // revert UI
+      }
+    }
+
+    /**
+     * Toggles a slot's blocked status (students cannot choose blocked slots)
+     */
+    async function toggleBlock(slotId) {
+      try {
+        const updated = await toggleBlockSlot(slotId);
+        await loadSlots();
+        if (updated.blocked) {
+          showToast('Slot blocked', 'info');
+        } else {
+          showToast('Slot unblocked', 'success');
+        }
+      } catch (err) {
+        showToast(err.message || 'Failed to toggle slot block', 'error');
+        await loadSlots();
+      }
+    }
+
+    /**
+     * Deletes a slot with confirmation prompt (allowed only when bookedCount is 0)
+     */
+    async function handleDeleteSlot(slotId) {
+      const allSlots = await getSlots();
+      const slot = allSlots.find(s => s.id === slotId);
+      if (!slot) return;
+
+      if ((slot.bookedCount || 0) > 0) {
+        showToast('Cannot delete slot with existing bookings', 'error');
+        return;
+      }
+
+      const confirmed = window.confirm(`Delete slot ${slot.start} – ${slot.end}?`);
+      if (!confirmed) return;
+
+      try {
+        await deleteSlot(slotId);
+        await loadSlots();
+        showToast('Slot deleted', 'info');
+      } catch (err) {
+        showToast(err.message || 'Failed to delete slot', 'error');
+      }
+    }
+
+    // -------------------------------------------------------------------------
+    // 7. BULK ACTIONS: BLOCK REMAINING, CAPACITY FOR ALL, UNBLOCK ALL
+    // -------------------------------------------------------------------------
+
+    /**
+     * Blocks all unpassed slots for the selected date
+     */
+    async function bulkBlockRemaining() {
+      try {
+        const result = await bulkBlockSlots(selectedDate);
+        await loadSlots();
+        if (result.count === 0) {
+          showToast('No remaining active slots to block', 'info');
+        } else {
+          showToast('Slot blocked', 'info');
+        }
+      } catch (err) {
+        showToast(err.message || 'Failed to block slots', 'error');
+      }
+    }
+
+    /**
+     * Sets capacity for all slots for the selected date
+     */
+    async function bulkSetCapacity() {
+      const input = document.getElementById('bulkCapacityInput');
+      const newCap = parseInt(input.value, 10);
+
+      if (isNaN(newCap) || newCap < 1) {
+        showToast('Please enter a valid capacity (1 or more)', 'warning');
+        return;
+      }
+
+      try {
+        const result = await bulkSetSlotCapacity(selectedDate, newCap);
+        await loadSlots();
+        if (result.skippedCount > 0) {
+          showToast(`Capacity updated. ${result.skippedCount} slots kept higher capacity due to existing bookings.`, 'warning');
+        } else {
+          showToast('Capacity updated', 'success');
+        }
+      } catch (err) {
+        showToast(err.message || 'Failed to update capacity', 'error');
+      }
+    }
+
+    /**
+     * Unblocks all slots for the selected date
+     */
+    async function bulkUnblockAll() {
+      try {
+        await bulkUnblockSlots(selectedDate);
+        await loadSlots();
+        showToast('Slot unblocked', 'success');
+      } catch (err) {
+        showToast(err.message || 'Failed to unblock slots', 'error');
+      }
+    }
+
+    // -------------------------------------------------------------------------
+    // 8. ADD SINGLE SLOT MODAL & HANDLERS
+    // -------------------------------------------------------------------------
+
+    function openAddSlotDialog() {
+      document.getElementById('newSlotDate').value = selectedDate;
+      document.getElementById('newSlotStart').value = '';
+      document.getElementById('newSlotEnd').value = '';
+      document.getElementById('newSlotCapacity').value = '8';
+      document.getElementById('addSlotError').classList.add('hidden');
+      document.getElementById('addSlotDialog').showModal();
+    }
+
+    function closeAddSlotDialog() {
+      document.getElementById('addSlotDialog').close();
+    }
+
+    async function handleAddSlotSubmit(event) {
+      event.preventDefault();
+      const errBox = document.getElementById('addSlotError');
+      errBox.classList.add('hidden');
+
+      const start = document.getElementById('newSlotStart').value;
+      const end = document.getElementById('newSlotEnd').value;
+      const capacity = parseInt(document.getElementById('newSlotCapacity').value, 10);
+
+      try {
+        await saveSlot({
+          date: selectedDate,
+          start,
+          end,
+          maxOrders: capacity
+        });
+        closeAddSlotDialog();
+        await loadSlots();
+        showToast('Slot added', 'success');
+      } catch (err) {
+        errBox.textContent = err.message || 'Failed to add slot.';
+        errBox.classList.remove('hidden');
+      }
+    }
+
+    // -------------------------------------------------------------------------
+    // 9. VIEW ORDERS IN SLOT MODAL
+    // -------------------------------------------------------------------------
+
+    async function openSlotOrders(slotId) {
+      const allSlots = await getSlots();
+      const slot = allSlots.find(s => s.id === slotId);
+      if (!slot) return;
+
+      const orders = await getOrders();
+      const matchingOrders = orders.filter(o => orderMatchesSlot(o, slot));
+
+      document.getElementById('slotOrdersModalTitle').textContent = `Slot: ${slot.start} – ${slot.end}`;
+      document.getElementById('slotOrdersModalSubtitle').textContent = `${slot.date} • ${matchingOrders.length} / ${slot.maxOrders} orders booked`;
+
+      const listContainer = document.getElementById('slotOrdersList');
+
+      if (matchingOrders.length === 0) {
+        listContainer.innerHTML = `
+          <div class="py-8 text-center" style="color: var(--text-muted);">
+            <div class="text-3xl mb-1.5 opacity-80">🍽️</div>
+            <p class="text-xs font-bold">No orders placed in this slot yet.</p>
+          </div>
+        `;
+      } else {
+        listContainer.innerHTML = matchingOrders.map(order => {
+          const itemsSummary = (order.items || []).map(i => `${i.qty || 1}x ${i.name}`).join(', ') || 'Standard order';
+          
+          let statusStyle = 'background-color: var(--bg-notice); color: var(--text-dark);';
+          if (order.orderStatus === 'Ready') statusStyle = 'background-color: var(--success-bg); color: var(--success);';
+          if (order.orderStatus === 'Preparing') statusStyle = 'background-color: var(--primary); color: #fff;';
+          if (order.orderStatus === 'Collected') statusStyle = 'background-color: var(--bg-panel); color: var(--text-muted);';
+
+          return `
+            <div class="p-3 rounded-xl border flex items-center justify-between gap-3 shadow-2xs"
+                 style="background-color: var(--bg-panel); border-color: var(--border-soft);">
+              <div>
+                <div class="flex items-center gap-2">
+                  <span class="font-extrabold text-sm" style="color: var(--primary);">
+                    ${order.token || 'N/A'}
+                  </span>
+                  <span class="font-bold text-xs" style="color: var(--text-dark);">
+                    ${order.studentName || 'Student'}
+                  </span>
+                </div>
+                <p class="text-xs mt-0.5" style="color: var(--text-muted);">
+                  ${itemsSummary}
+                </p>
+              </div>
+              <span class="text-[10px] font-extrabold px-2 py-0.5 rounded-full"
+                    style="${statusStyle}">
+                ${order.orderStatus || 'Placed'}
+              </span>
+            </div>
+          `;
+        }).join('');
+      }
+
+      document.getElementById('slotOrdersDialog').showModal();
+    }
+
+    function closeSlotOrdersDialog() {
+      document.getElementById('slotOrdersDialog').close();
+    }
+
+    // -------------------------------------------------------------------------
+    // 10. BREAK PERIODS DYNAMIC UI
+    // -------------------------------------------------------------------------
+
+    async function renderBreakPeriods() {
+      const container = document.getElementById('breaksContainer');
+      const addBtn = document.getElementById('btnAddBreak');
+      if (!container) return;
+
+      const settings = await getSlotSettings();
+      const breaks = settings.breaks || [];
+
+      if (breaks.length >= 3 && addBtn) {
+        addBtn.disabled = true;
+        addBtn.classList.add('opacity-50', 'cursor-not-allowed');
+      } else if (addBtn) {
+        addBtn.disabled = false;
+        addBtn.classList.remove('opacity-50', 'cursor-not-allowed');
+      }
+
+      if (breaks.length === 0) {
+        container.innerHTML = `
+          <p class="text-[11px] font-semibold py-1" style="color: var(--text-placeholder);">
+            No break periods configured.
+          </p>
+        `;
+        return;
+      }
+
+      container.innerHTML = breaks.map((brk, index) => `
+        <div class="break-row flex items-center gap-2 p-2 rounded-xl border"
+             style="background-color: var(--bg-card); border-color: var(--border-soft);">
+          <input type="time" 
+                 value="${brk.start}" 
+                 class="break-start rounded-lg px-2 py-1 text-xs font-semibold border"
+                 style="background-color: var(--bg-panel); border-color: var(--border-soft); color: var(--text-dark);" />
+          <span class="text-xs font-bold" style="color: var(--text-muted);">to</span>
+          <input type="time" 
+                 value="${brk.end}" 
+                 class="break-end rounded-lg px-2 py-1 text-xs font-semibold border"
+                 style="background-color: var(--bg-panel); border-color: var(--border-soft); color: var(--text-dark);" />
+          <button type="button" 
+                  onclick="handleRemoveBreak(${index})" 
+                  class="w-6 h-6 rounded-lg font-bold flex items-center justify-center transition hover:opacity-85 shadow-2xs"
+                  style="background-color: var(--danger-bg); color: var(--danger); border: 1px solid var(--danger);"
+                  title="Remove this break">
+            ✕
+          </button>
+        </div>
+      `).join('');
+    }
+
+    async function handleAddBreak() {
+      try {
+        await addBreakPeriod();
+        await renderBreakPeriods();
+        showToast('Break period added', 'success');
+      } catch (err) {
+        showToast(err.message || 'Cannot add break period', 'warning');
+      }
+    }
+
+    async function handleRemoveBreak(index) {
+      try {
+        await removeBreakPeriod(index);
+        await renderBreakPeriods();
+        showToast('Break period removed', 'info');
+      } catch (err) {
+        showToast(err.message || 'Cannot remove break period', 'warning');
+      }
+    }
+
+    // -------------------------------------------------------------------------
+    // 11. DATE NAVIGATION HANDLERS
+    // -------------------------------------------------------------------------
+
+    function setDate(dateStr) {
+      if (!dateStr) return;
+      selectedDate = dateStr;
+      loadSlots();
+    }
+
+    function changeDate(deltaDays) {
+      const current = new Date(selectedDate);
+      current.setDate(current.getDate() + deltaDays);
+      const year = current.getFullYear();
+      const month = String(current.getMonth() + 1).padStart(2, '0');
+      const day = String(current.getDate()).padStart(2, '0');
+      selectedDate = `${year}-${month}-${day}`;
+      loadSlots();
+    }
+
+    function goToToday() {
+      selectedDate = getTodayString();
+      loadSlots();
+    }
+
+    // -------------------------------------------------------------------------
+    // 12. TOAST NOTIFICATION UTILITY (Cocoa & Cream Dark Toast)
+    // -------------------------------------------------------------------------
+    function showToast(message, type = 'info') {
+      const container = document.getElementById('toastContainer');
+      if (!container) return;
+
+      const toast = document.createElement('div');
+      let icon = 'ℹ️';
+      let borderAccent = 'var(--primary)';
+
+      if (type === 'success') {
+        icon = '✅';
+        borderAccent = 'var(--success)';
+      } else if (type === 'warning') {
+        icon = '⚠️';
+        borderAccent = 'var(--accent)';
+      } else if (type === 'error') {
+        icon = '❌';
+        borderAccent = 'var(--danger)';
+      }
+
+      toast.className = `pointer-events-auto flex items-center gap-2.5 px-4 py-3 rounded-2xl shadow-xl text-xs font-bold transform transition-all duration-300 translate-y-3 opacity-0`;
+      toast.style.backgroundColor = 'var(--text-dark)';
+      toast.style.color = 'var(--bg-page)';
+      toast.style.border = '1px solid var(--border-soft)';
+      toast.style.borderLeft = `5px solid ${borderAccent}`;
+      toast.style.boxShadow = '0 10px 25px -3px rgba(47, 33, 24, 0.35)';
+      toast.innerHTML = `<span>${icon}</span> <span>${message}</span>`;
+
+      container.appendChild(toast);
+
+      requestAnimationFrame(() => {
+        toast.classList.remove('translate-y-3', 'opacity-0');
+      });
+
+      setTimeout(() => {
+        toast.classList.add('opacity-0', 'translate-y-2');
+        setTimeout(() => toast.remove(), 300);
+      }, 2800);
+    }
+
+    // -------------------------------------------------------------------------
+    // 13. LOGOUT & AUTH GUARD
+    // -------------------------------------------------------------------------
+    async function handleLogout(event) {
+      if (event) event.preventDefault();
+      await logoutUser();
+      window.location.href = 'login.html';
+    }
+
+    let refreshTimer = null;
+
+    function startAutoRefresh() {
+      if (refreshTimer) clearInterval(refreshTimer);
+      refreshTimer = setInterval(async () => {
+        await loadSlots();
+      }, 15000);
+    }
+
+    // -------------------------------------------------------------------------
+    // 14. INITIALIZATION & REACTION LISTENERS
+    // -------------------------------------------------------------------------
+    document.addEventListener('DOMContentLoaded', async () => {
+      // 1. Auth Guard: Admin access only
+      const session = await getSession();
+      if (!session || session.role !== 'admin') {
+        window.location.href = 'login.html';
+        return;
+      }
+
+      // 2. Populate Settings UI from stored settings
+      const settings = await getSlotSettings();
+      document.getElementById('settingOpenTime').value = settings.openTime;
+      document.getElementById('settingCloseTime').value = settings.closeTime;
+      document.getElementById('settingDuration').value = settings.duration;
+      document.getElementById('settingDefaultMax').value = settings.defaultMax;
+      document.getElementById('settingBuffer').value = settings.lastOrderBufferMinutes;
+      await renderBreakPeriods();
+
+      // 3. Initial slots load & generation if empty
+      const existing = await getSlots();
+      if (existing.length === 0) {
+        await generateSlots(selectedDate);
+      }
+      await loadSlots();
+
+      // 4. Auto-refresh every 15 seconds
+      startAutoRefresh();
+
+      // 5. Cross-tab sync: detect changes in slots, orders, settings or canteen status
+      window.addEventListener('storage', async (event) => {
+        const watchedKeys = [
+          typeof STORAGE_KEYS !== 'undefined' ? STORAGE_KEYS.SLOTS : 'cubite_slots',
+          typeof STORAGE_KEYS !== 'undefined' ? STORAGE_KEYS.SLOT_SETTINGS : 'cubite_slot_settings',
+          typeof STORAGE_KEYS !== 'undefined' ? STORAGE_KEYS.ORDERS : 'cubite_orders',
+          typeof STORAGE_KEYS !== 'undefined' ? STORAGE_KEYS.CANTEEN_OPEN : 'cubite_canteen_open'
+        ];
+        if (watchedKeys.includes(event.key)) {
+          if (event.key === (typeof STORAGE_KEYS !== 'undefined' ? STORAGE_KEYS.SLOT_SETTINGS : 'cubite_slot_settings')) {
+            const freshSettings = await getSlotSettings();
+            document.getElementById('settingOpenTime').value = freshSettings.openTime;
+            document.getElementById('settingCloseTime').value = freshSettings.closeTime;
+            document.getElementById('settingDuration').value = freshSettings.duration;
+            document.getElementById('settingDefaultMax').value = freshSettings.defaultMax;
+            document.getElementById('settingBuffer').value = freshSettings.lastOrderBufferMinutes;
+            await renderBreakPeriods();
+          }
+          await loadSlots();
+        }
+      });
+
+      // 6. Tab visibility and focus sync
+      document.addEventListener('visibilitychange', async () => {
+        if (document.visibilityState === 'visible') {
+          await loadSlots();
+        }
+      });
+      window.addEventListener('focus', async () => {
+        await loadSlots();
+      });
+    });
+  </script>
+
+</body>
+</html>

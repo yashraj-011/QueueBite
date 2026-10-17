@@ -1,0 +1,820 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>QueueBite – Order History</title>
+  <!-- Tailwind CSS via CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <!-- Theme Configuration (Cocoa & Cream) -->
+  <script src="theme.js"></script>
+  <!-- Plus Jakarta Sans Font -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+
+  <style>
+    /* Cocoa and Cream Theme Palette */
+    :root {
+      --bg-page:        #FBF4E9;   /* main cream background */
+      --bg-panel:       #EFE3D3;   /* sidebar, filter bar, toggle tracks, chips */
+      --bg-card:        #FFFFFF;   /* cards, inputs, modal */
+      --bg-notice:      #FAE8D0;   /* info boxes, highlights, tag backgrounds */
+      --border-notice:  #F0C888;   /* border of info boxes */
+      --border-soft:    #E4D6C3;   /* normal card and input borders */
+      --text-dark:      #2F2118;   /* headings and main text */
+      --text-muted:     #6B5645;   /* labels, secondary text */
+      --text-placeholder: #B9AA9A; /* placeholder text */
+      --primary:        #8B5E3C;   /* main buttons, active tabs, headers */
+      --primary-hover:  #774D2F;   /* button hover */
+      --accent:         #E9A23B;   /* mustard: tags, highlights */
+      --success:        #4F7A4A;   /* Available / Veg / Ready */
+      --success-bg:     #E3EFDC;
+      --danger:         #B3453A;   /* Cancelled / Missed */
+      --danger-bg:      #F7DEDA;
+      --neutral-bg:     #E4DDD3;
+    }
+
+    body {
+      font-family: 'Plus Jakarta Sans', sans-serif;
+      background-color: var(--bg-page);
+      color: var(--text-dark);
+    }
+
+    /* Cards */
+    .dashboard-card {
+      background-color: var(--bg-card);
+      border: 1px solid var(--border-soft);
+      border-radius: 20px;
+      box-shadow: 0 4px 20px -2px rgba(47, 33, 24, 0.06);
+      transition: all 0.2s ease;
+    }
+
+    /* Primary buttons */
+    .btn-primary {
+      background-color: var(--primary);
+      color: #FFFFFF;
+      border-radius: 14px;
+      box-shadow: 0 4px 14px -2px rgba(139, 94, 60, 0.28);
+      transition: all 0.2s ease;
+      cursor: pointer;
+    }
+    .btn-primary:hover:not(:disabled) {
+      background-color: var(--primary-hover);
+      box-shadow: 0 6px 18px -2px rgba(139, 94, 60, 0.38);
+    }
+    .btn-primary:active:not(:disabled) {
+      transform: scale(0.98);
+    }
+    .btn-primary:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+      box-shadow: none;
+    }
+  </style>
+</head>
+
+<body class="min-h-screen flex flex-col antialiased selection:bg-[#E9A23B] selection:text-[#2F2118]">
+
+  <!-- ========================================================================= -->
+  <!-- 1. TOP NAVBAR (Matches student-menu.html, cart & track)                   -->
+  <!-- ========================================================================= -->
+  <header class="sticky top-0 z-30 border-b backdrop-blur-md transition-all"
+          style="background-color: rgba(251, 244, 233, 0.94); border-color: var(--border-soft);">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+      <div class="flex items-center justify-between h-16 sm:h-20">
+
+        <!-- Brand Logo -->
+        <a href="student-menu.html" class="flex items-center gap-2.5 group">
+          <div class="w-10 h-10 rounded-2xl flex items-center justify-center text-white text-xl shadow-md transition group-hover:scale-105"
+               style="background-color: var(--primary); box-shadow: 0 4px 14px rgba(139, 94, 60, 0.3);">
+            🍛
+          </div>
+          <div>
+            <span class="font-extrabold text-xl sm:text-2xl tracking-tight leading-none" style="color: var(--text-dark);">
+              QueueBite
+            </span>
+            <p class="text-[10px] font-bold tracking-wider uppercase hidden sm:block" style="color: var(--primary);">
+              Student Canteen
+            </p>
+          </div>
+        </a>
+
+        <!-- Desktop Navigation Links -->
+        <nav class="hidden md:flex items-center gap-1.5 p-1.5 rounded-2xl border"
+             style="background-color: var(--bg-panel); border-color: var(--border-soft);">
+          <a href="student-menu.html"
+             class="px-4 py-2 rounded-xl text-xs font-bold transition hover:opacity-80"
+             style="color: var(--text-muted);">
+            🍽️ Menu
+          </a>
+          <a href="student-track.html"
+             class="px-4 py-2 rounded-xl text-xs font-bold transition hover:opacity-80"
+             style="color: var(--text-muted);">
+            ⏱️ My Order
+          </a>
+          <!-- History (Active) -->
+          <a href="student-orders.html"
+             class="px-4 py-2 rounded-xl text-xs font-bold shadow-sm transition"
+             style="background-color: var(--bg-card); color: var(--text-dark);"
+             aria-current="page">
+            🧾 History
+          </a>
+        </nav>
+
+        <!-- Right Side: Cart Button & Profile / Mobile Hamburger -->
+        <div class="flex items-center gap-2 sm:gap-3">
+          
+          <!-- Cart Button with Count Badge -->
+          <a href="student-cart.html" 
+             id="navCartBtn" 
+             class="relative inline-flex items-center gap-2 px-3.5 py-2.5 rounded-2xl text-xs font-extrabold transition hover:opacity-90 active:scale-95 shadow-sm border"
+             style="background-color: var(--bg-card); color: var(--text-dark); border-color: var(--border-soft);"
+             title="View Cart">
+            <span class="text-base leading-none">🛒</span>
+            <span class="hidden sm:inline">Cart</span>
+            <span id="navCartCount" 
+                  class="min-w-[20px] h-5 px-1.5 rounded-full flex items-center justify-center text-[10px] font-black text-white"
+                  style="background-color: var(--primary);">
+              0
+            </span>
+          </a>
+
+          <!-- Student Profile & Logout -->
+          <div class="hidden md:flex items-center gap-2">
+            <div class="px-3 py-2 rounded-2xl border flex items-center gap-2 text-xs font-bold shadow-2xs"
+                 style="background-color: var(--bg-panel); border-color: var(--border-soft); color: var(--text-dark);">
+              <span>🎓</span>
+              <span id="desktopStudentName">Student</span>
+            </div>
+            <button type="button" 
+                    onclick="handleLogout()" 
+                    class="px-3 py-2 rounded-2xl border text-xs font-bold transition hover:opacity-85 shadow-2xs"
+                    style="background-color: var(--danger-bg); border-color: rgba(179, 69, 58, 0.25); color: var(--danger);"
+                    title="Sign out">
+              Logout
+            </button>
+          </div>
+
+          <!-- Mobile Hamburger Toggle -->
+          <button type="button" 
+                  id="mobileMenuBtn" 
+                  onclick="toggleMobileMenu()" 
+                  class="md:hidden w-10 h-10 rounded-2xl border flex items-center justify-center text-lg font-bold transition shadow-sm"
+                  style="background-color: var(--bg-card); border-color: var(--border-soft); color: var(--text-dark);"
+                  aria-label="Toggle mobile menu">
+            ☰
+          </button>
+
+        </div>
+
+      </div>
+    </div>
+
+    <!-- Mobile Collapsed Dropdown -->
+    <div id="mobileMenuDropdown" 
+         class="hidden md:hidden border-t px-4 py-3 space-y-2 transition-all"
+         style="background-color: var(--bg-panel); border-color: var(--border-soft);">
+      <div class="flex items-center justify-between pb-2 border-b" style="border-color: var(--border-soft);">
+        <div class="flex items-center gap-2 text-xs font-extrabold" style="color: var(--text-dark);">
+          <span>🎓</span>
+          <span id="mobileStudentName">Student</span>
+        </div>
+        <button type="button" 
+                onclick="handleLogout()" 
+                class="text-xs font-bold px-2.5 py-1 rounded-xl"
+                style="background-color: var(--danger-bg); color: var(--danger);">
+          Logout
+        </button>
+      </div>
+
+      <a href="student-menu.html" 
+         class="block px-3 py-2.5 rounded-xl text-xs font-bold hover:bg-white/50"
+         style="color: var(--text-dark);">
+        🍽️ Menu
+      </a>
+      <a href="student-track.html" 
+         class="block px-3 py-2.5 rounded-xl text-xs font-bold hover:bg-white/50"
+         style="color: var(--text-dark);">
+        ⏱️ My Order
+      </a>
+      <a href="student-cart.html" 
+         class="block px-3 py-2.5 rounded-xl text-xs font-bold hover:bg-white/50"
+         style="color: var(--text-dark);">
+        🛒 Cart
+      </a>
+      <a href="student-orders.html" 
+         class="block px-3 py-2.5 rounded-xl text-xs font-extrabold shadow-sm"
+         style="background-color: var(--bg-card); color: var(--text-dark);">
+        🧾 History (Active)
+      </a>
+    </div>
+  </header>
+
+  <!-- ========================================================================= -->
+  <!-- 2. MAIN CONTENT                                                           -->
+  <!-- ========================================================================= -->
+  <main class="flex-1 max-w-5xl mx-auto w-full px-4 sm:px-6 lg:px-8 py-6 sm:py-8">
+
+    <!-- Page Breadcrumb & Header -->
+    <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-6">
+      <div>
+        <div class="flex items-center gap-2 text-xs font-bold" style="color: var(--text-muted);">
+          <a href="student-menu.html" class="hover:underline">Home</a>
+          <span>/</span>
+          <span style="color: var(--text-dark);">Order History</span>
+        </div>
+        <h1 class="text-2xl sm:text-3xl font-extrabold tracking-tight mt-1" style="color: var(--text-dark);">
+          My Orders
+        </h1>
+      </div>
+
+      <a href="student-menu.html" 
+         class="inline-flex items-center gap-1.5 text-xs font-bold px-4 py-2.5 rounded-xl border transition hover:opacity-85 shadow-2xs self-start sm:self-auto"
+         style="background-color: var(--bg-card); border-color: var(--border-soft); color: var(--text-dark);">
+        <span>🍽️</span>
+        <span>Order New Meal</span>
+      </a>
+    </div>
+
+    <!-- Filter Tabs Row -->
+    <div class="flex items-center gap-2 overflow-x-auto pb-2 mb-6 no-scrollbar" id="ordersTabsContainer">
+      <!-- Injected dynamically via renderTabs() -->
+    </div>
+
+    <!-- Orders Cards Container -->
+    <div id="ordersListContainer" class="space-y-4">
+      <!-- Populated dynamically via renderOrders() -->
+    </div>
+
+    <!-- Empty State View: Full empty or Tab empty -->
+    <div id="emptyOrdersView" class="hidden dashboard-card p-10 sm:p-14 text-center max-w-md mx-auto my-6">
+      <div id="emptyStateIcon" class="w-16 h-16 rounded-3xl flex items-center justify-center text-3xl mx-auto mb-4 shadow-sm"
+           style="background-color: var(--bg-notice); color: var(--primary);">
+        🧾
+      </div>
+      <h3 id="emptyStateTitle" class="text-lg font-extrabold" style="color: var(--text-dark);">
+        You haven't ordered anything yet
+      </h3>
+      <p id="emptyStateSubtitle" class="text-xs sm:text-sm mt-1.5 font-medium leading-relaxed" style="color: var(--text-muted);">
+        When you place an order, it will appear here so you can track it or reorder your favorite meals.
+      </p>
+      <div id="emptyStateActionBtn" class="mt-6">
+        <a href="student-menu.html" class="btn-primary inline-flex items-center gap-2 px-6 py-2.5 text-xs font-bold">
+          <span>Browse Today's Menu</span>
+          <span>→</span>
+        </a>
+      </div>
+    </div>
+
+  </main>
+
+  <!-- ========================================================================= -->
+  <!-- 3. FLOATING TOAST NOTIFICATION UTILITY                                     -->
+  <!-- ========================================================================= -->
+  <div id="toastContainer" 
+       class="fixed bottom-5 right-5 z-50 flex flex-col gap-2 pointer-events-none max-w-sm w-full px-4 sm:px-0"
+       aria-live="polite">
+  </div>
+
+  <!-- ========================================================================= -->
+  <!-- 4. JAVASCRIPT LOGIC & STORAGE INTEGRATION                                 -->
+  <!-- ========================================================================= -->
+  <script src="storage.js"></script>
+
+  <script>
+    // -------------------------------------------------------------------------
+    // PAGE STATE
+    // -------------------------------------------------------------------------
+    let currentStudent = null;
+    let allOrders = [];
+    let activeTab = 'all'; // 'all' | 'active' | 'completed' | 'cancelled'
+    let expandedOrderIds = new Set();
+    let pollIntervalId = null;
+
+    // -------------------------------------------------------------------------
+    // 1. INITIALIZATION & AUTH GUARD (loadOrders)
+    // -------------------------------------------------------------------------
+    document.addEventListener('DOMContentLoaded', async () => {
+      // 1. Auth Guard
+      const session = await getSession();
+      if (!session || session.role !== 'student') {
+        window.location.href = 'login.html';
+        return;
+      }
+      currentStudent = session;
+
+      // Populate student name
+      const name = currentStudent.name || 'Student';
+      document.getElementById('desktopStudentName').textContent = name;
+      document.getElementById('mobileStudentName').textContent = name;
+
+      // Update cart badge
+      await updateNavCartCount();
+
+      // Load orders
+      await loadOrders();
+
+      // Start 10-second polling interval
+      startPolling();
+
+      // Cross-tab storage synchronization
+      window.addEventListener('storage', async (event) => {
+        if (event.key === STORAGE_KEYS.ORDERS || event.key === STORAGE_KEYS.CART) {
+          await loadOrders();
+          await updateNavCartCount();
+        }
+      });
+    });
+
+    /**
+     * Updates top nav cart badge count
+     */
+    async function updateNavCartCount() {
+      const summary = await getCartSummary();
+      const countEl = document.getElementById('navCartCount');
+      if (countEl) countEl.textContent = summary.totalCount;
+    }
+
+    /**
+     * Loads student orders, sorts newest first, and triggers rendering
+     */
+    async function loadOrders() {
+      const rawOrders = await getMyOrders();
+
+      // Sort newest first by creation timestamp
+      allOrders = (rawOrders || []).sort((a, b) => {
+        const timeA = a.createdAt ? new Date(a.createdAt).getTime() : 0;
+        const timeB = b.createdAt ? new Date(b.createdAt).getTime() : 0;
+        return timeB - timeA;
+      });
+
+      renderTabs();
+      renderFilteredOrders();
+    }
+
+    // -------------------------------------------------------------------------
+    // 2. TABS & FILTERING (renderTabs)
+    // -------------------------------------------------------------------------
+    function renderTabs() {
+      const container = document.getElementById('ordersTabsContainer');
+      if (!container) return;
+
+      const counts = {
+        all: allOrders.length,
+        active: allOrders.filter(o => ['Placed', 'Preparing', 'Ready'].includes(o.orderStatus || o.status)).length,
+        completed: allOrders.filter(o => (o.orderStatus || o.status) === 'Collected').length,
+        cancelled: allOrders.filter(o => ['Cancelled', 'Missed'].includes(o.orderStatus || o.status)).length
+      };
+
+      const tabs = [
+        { id: 'all', label: 'All Orders', count: counts.all },
+        { id: 'active', label: 'Active', count: counts.active },
+        { id: 'completed', label: 'Completed', count: counts.completed },
+        { id: 'cancelled', label: 'Cancelled', count: counts.cancelled }
+      ];
+
+      container.innerHTML = tabs.map(tab => {
+        const isActive = activeTab === tab.id;
+        const activeStyles = `background-color: var(--primary); color: #FFFFFF; border-color: var(--primary); box-shadow: 0 4px 12px rgba(139, 94, 60, 0.25);`;
+        const inactiveStyles = `background-color: var(--bg-card); color: var(--text-dark); border-color: var(--border-soft);`;
+
+        return `
+          <button type="button" 
+                  onclick="switchTab('${tab.id}')" 
+                  class="whitespace-nowrap px-4 py-2.5 rounded-xl text-xs font-bold border transition flex items-center gap-2 active:scale-95 shadow-2xs"
+                  style="${isActive ? activeStyles : inactiveStyles}">
+            <span>${tab.label}</span>
+            <span class="text-[10px] font-black px-1.5 py-0.5 rounded-full ${isActive ? 'bg-white/20 text-white' : ''}"
+                  style="${!isActive ? 'background-color: var(--bg-panel); color: var(--text-muted);' : ''}">
+              ${tab.count}
+            </span>
+          </button>
+        `;
+      }).join('');
+    }
+
+    function switchTab(tabId) {
+      activeTab = tabId;
+      renderTabs();
+      renderFilteredOrders();
+    }
+
+    function getFilteredOrders() {
+      if (activeTab === 'active') {
+        return allOrders.filter(o => ['Placed', 'Preparing', 'Ready'].includes(o.orderStatus || o.status));
+      }
+      if (activeTab === 'completed') {
+        return allOrders.filter(o => (o.orderStatus || o.status) === 'Collected');
+      }
+      if (activeTab === 'cancelled') {
+        return allOrders.filter(o => ['Cancelled', 'Missed'].includes(o.orderStatus || o.status));
+      }
+      return allOrders;
+    }
+
+    // -------------------------------------------------------------------------
+    // 3. ORDER CARD RENDERING (renderOrderCard)
+    // -------------------------------------------------------------------------
+    function renderFilteredOrders() {
+      const container = document.getElementById('ordersListContainer');
+      const emptyView = document.getElementById('emptyOrdersView');
+      const emptyTitle = document.getElementById('emptyStateTitle');
+      const emptySub = document.getElementById('emptyStateSubtitle');
+      const emptyBtn = document.getElementById('emptyStateActionBtn');
+
+      const filtered = getFilteredOrders();
+
+      if (filtered.length === 0) {
+        container.innerHTML = '';
+        emptyView.classList.remove('hidden');
+
+        if (allOrders.length === 0) {
+          // Total empty state
+          emptyTitle.textContent = "You haven't ordered anything yet";
+          emptySub.textContent = "When you place an order, it will appear here so you can track it or reorder your favorites.";
+          emptyBtn.classList.remove('hidden');
+        } else {
+          // Tab specific empty state
+          emptyBtn.classList.add('hidden');
+          if (activeTab === 'active') {
+            emptyTitle.textContent = "No active orders right now";
+            emptySub.textContent = "You don't have any meals currently placed or being prepared.";
+          } else if (activeTab === 'completed') {
+            emptyTitle.textContent = "No completed orders yet";
+            emptySub.textContent = "Orders you pick up at the counter will appear here.";
+          } else {
+            emptyTitle.textContent = "No cancelled orders";
+            emptySub.textContent = "You have no cancelled or missed orders on record.";
+          }
+        }
+        return;
+      }
+
+      emptyView.classList.add('hidden');
+      container.innerHTML = filtered.map(order => renderOrderCard(order)).join('');
+    }
+
+    /**
+     * Constructs HTML for a single order card
+     */
+    function renderOrderCard(order) {
+      const status = order.orderStatus || order.status || 'Placed';
+      const isExpanded = expandedOrderIds.has(order.id);
+      const items = order.items || [];
+
+      // Items summary string (e.g. "2x Samosa, 1x Cold Coffee")
+      const itemsSummary = items.map(i => `${i.qty}x ${i.name}`).join(', ') || '1x Meal';
+
+      // Status Badge Styling (Matches admin & student pages)
+      let statusStyle = 'background-color: var(--bg-notice); color: var(--text-dark); border: 1px solid var(--border-notice);';
+      if (status === 'Preparing') {
+        statusStyle = 'background-color: var(--bg-panel); color: var(--primary); border: 1px solid var(--border-soft);';
+      } else if (status === 'Ready') {
+        statusStyle = 'background-color: var(--success-bg); color: var(--success); border: 1px solid var(--success);';
+      } else if (status === 'Collected') {
+        statusStyle = 'background-color: var(--neutral-bg); color: var(--text-dark); border: 1px solid var(--border-soft);';
+      } else if (status === 'Cancelled' || status === 'Missed') {
+        statusStyle = 'background-color: var(--danger-bg); color: var(--danger); border: 1px solid var(--danger);';
+      }
+
+      // Payment Badge Styling
+      const pStatus = order.paymentStatus || (order.paymentMethod === 'UPI' ? 'Paid' : 'Pending');
+      let paymentBadgeStyle = 'background-color: var(--bg-notice); color: var(--primary);';
+      if (pStatus === 'Paid') {
+        paymentBadgeStyle = 'background-color: var(--success-bg); color: var(--success);';
+      } else if (pStatus === 'Refunded') {
+        paymentBadgeStyle = 'background-color: var(--neutral-bg); color: var(--text-muted);';
+      } else if (pStatus === 'Failed') {
+        paymentBadgeStyle = 'background-color: var(--danger-bg); color: var(--danger);';
+      }
+
+      // Formatted date & time
+      let dateString = 'Today';
+      if (order.createdAt) {
+        try {
+          const d = new Date(order.createdAt);
+          const time = d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+          const date = d.toLocaleDateString([], { month: 'short', day: 'numeric' });
+          dateString = `${date} • ${time}`;
+        } catch (e) {
+          dateString = 'Recent';
+        }
+      }
+
+      // Action Button: Track (Active) vs Reorder (Completed)
+      let actionBtnHtml = '';
+      const isActive = ['Placed', 'Preparing', 'Ready'].includes(status);
+      const isCompleted = status === 'Collected';
+
+      if (isActive) {
+        actionBtnHtml = `
+          <a href="student-track.html?id=${order.id}" 
+             class="btn-primary inline-flex items-center gap-1.5 px-3.5 py-2 text-xs font-bold"
+             onclick="event.stopPropagation()">
+            <span>⏱️ Track Order</span>
+            <span>→</span>
+          </a>
+        `;
+      } else if (isCompleted) {
+        actionBtnHtml = `
+          <button type="button" 
+                  onclick="event.stopPropagation(); handleReorder('${order.id}')" 
+                  class="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-xs font-bold border transition hover:opacity-85 shadow-2xs"
+                  style="background-color: var(--bg-notice); border-color: var(--border-notice); color: var(--primary);">
+            <span>↺ Reorder</span>
+          </button>
+        `;
+      }
+
+      // Expanded Details Section
+      let detailsSectionHtml = '';
+      if (isExpanded) {
+        const itemsListHtml = items.map(item => `
+          <div class="py-1.5 flex items-center justify-between text-xs">
+            <div class="flex items-center gap-2">
+              <span class="font-extrabold" style="color: var(--primary);">${item.qty}x</span>
+              <span class="font-medium" style="color: var(--text-dark);">${item.name}</span>
+            </div>
+            <span class="font-bold" style="color: var(--text-dark);">₹${Number(item.price) * Number(item.qty)}</span>
+          </div>
+        `).join('');
+
+        let cancelNoticeHtml = '';
+        if (status === 'Cancelled') {
+          const who = order.cancelledBy === 'admin' 
+            ? 'Canteen Staff' 
+            : (order.cancelledBy === 'student' ? 'You (Student)' : (order.cancelledBy || 'Not recorded'));
+          const reason = order.cancelReason || 'Not specified';
+          const refundNotice = (order.cancelledBy === 'admin' && (order.paymentStatus === 'Refunded' || pStatus === 'Refunded'))
+            ? '<p class="text-[11px] font-medium pt-0.5">Sorry for the trouble. Your payment will be refunded.</p>'
+            : '';
+
+          cancelNoticeHtml = `
+            <div class="mt-3 p-3 rounded-xl border text-xs space-y-1" style="background-color: var(--danger-bg); border-color: rgba(179, 69, 58, 0.25); color: var(--danger);">
+              <div class="flex items-center justify-between flex-wrap gap-1 font-bold">
+                <span>Cancelled by: <span class="font-semibold">${who}</span></span>
+                <span>Payment: <span class="font-semibold">${pStatus}</span></span>
+              </div>
+              <div class="text-xs">
+                <span class="font-bold">Reason:</span> ${reason}
+              </div>
+              ${refundNotice}
+            </div>
+          `;
+        }
+
+        let noteHtml = '';
+        if (order.note && order.note.trim()) {
+          noteHtml = `
+            <div class="mt-2 text-xs italic" style="color: var(--text-muted);">
+              📝 Special note: "${order.note.trim()}"
+            </div>
+          `;
+        }
+
+        detailsSectionHtml = `
+          <div class="mt-4 pt-4 border-t space-y-3 transition-all" style="border-color: var(--border-soft);">
+            <div class="text-[11px] font-extrabold uppercase tracking-wider" style="color: var(--text-muted);">
+              Item Breakdown
+            </div>
+            <div class="divide-y" style="border-color: var(--border-soft);">
+              ${itemsListHtml}
+            </div>
+            ${noteHtml}
+            ${cancelNoticeHtml}
+            <div class="pt-2 flex items-center justify-between text-[11px] font-semibold" style="color: var(--text-muted);">
+              <span>Order ID: <code class="font-mono text-xs" style="color: var(--text-dark);">${order.id || 'N/A'}</code></span>
+              <span>Payment: ${order.paymentMethod === 'UPI' ? 'Mock UPI' : 'Pay at Counter'} (${pStatus})</span>
+            </div>
+          </div>
+        `;
+      }
+
+      return `
+        <article class="dashboard-card p-4 sm:p-5 cursor-pointer hover:shadow-md transition-all"
+                 onclick="toggleDetails('${order.id}')">
+          
+          <!-- Top Row: Token, Date & Status Badges -->
+          <div class="flex items-start sm:items-center justify-between gap-3 flex-wrap">
+            <div class="flex items-center gap-2.5">
+              <span class="text-xl sm:text-2xl font-black tracking-tight" style="color: var(--primary);">
+                ${order.token || '#000'}
+              </span>
+              <span class="text-xs font-bold" style="color: var(--text-muted);">
+                ${dateString}
+              </span>
+            </div>
+
+            <div class="flex items-center gap-2">
+              <!-- Payment Status Badge -->
+              <span class="text-[10px] font-black px-2 py-0.5 rounded-full uppercase"
+                    style="${paymentBadgeStyle}">
+                ${pStatus}
+              </span>
+              <!-- Order Status Badge -->
+              <span class="text-xs font-black px-2.5 py-1 rounded-full uppercase tracking-wider"
+                    style="${statusStyle}">
+                ${status}
+              </span>
+            </div>
+          </div>
+
+          <!-- Middle Row: Items summary & Pickup Slot -->
+          <div class="mt-3 flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+            <div class="flex-1 min-w-0 pr-2">
+              <p class="text-xs sm:text-sm font-extrabold truncate" style="color: var(--text-dark);">
+                ${itemsSummary}
+              </p>
+              <p class="text-xs font-semibold mt-0.5" style="color: var(--text-muted);">
+                🕒 Pickup Window: <span class="font-bold" style="color: var(--text-dark);">${order.slotTime || 'N/A'}</span>
+              </p>
+            </div>
+
+            <div class="flex items-center justify-between sm:justify-end gap-3 flex-shrink-0 mt-2 sm:mt-0">
+              <div class="text-left sm:text-right">
+                <span class="text-base sm:text-lg font-black leading-tight" style="color: var(--text-dark);">
+                  ₹${order.total || 0}
+                </span>
+              </div>
+              ${actionBtnHtml}
+            </div>
+          </div>
+
+          <!-- Bottom: Expand Details Toggle -->
+          <div class="mt-3 pt-2.5 border-t flex items-center justify-between text-[11px] font-bold"
+               style="border-color: var(--border-soft); color: var(--text-muted);">
+            <span>${items.length} item${items.length === 1 ? '' : 's'} in order</span>
+            <span class="flex items-center gap-1 hover:text-[var(--primary)] transition">
+              <span>${isExpanded ? 'Hide details' : 'View details'}</span>
+              <span class="text-[10px]">${isExpanded ? '▲' : '▼'}</span>
+            </span>
+          </div>
+
+          <!-- Expanded Item Breakdown Section -->
+          ${detailsSectionHtml}
+
+        </article>
+      `;
+    }
+
+    // -------------------------------------------------------------------------
+    // 4. TOGGLE DETAILS (toggleDetails)
+    // -------------------------------------------------------------------------
+    function toggleDetails(orderId) {
+      if (expandedOrderIds.has(orderId)) {
+        expandedOrderIds.delete(orderId);
+      } else {
+        expandedOrderIds.add(orderId);
+      }
+      renderFilteredOrders();
+    }
+
+    // -------------------------------------------------------------------------
+    // 5. REORDER WORKFLOW (handleReorder)
+    // -------------------------------------------------------------------------
+    async function handleReorder(orderId) {
+      const order = allOrders.find(o => o.id === orderId);
+      if (!order || !order.items || order.items.length === 0) {
+        showToast('No items found in this order to reorder.', 'error');
+        return;
+      }
+
+      showToast('Checking item availability...', 'info');
+
+      // Fetch live menu from storage.js
+      const currentMenu = await getMenu();
+      const addedItems = [];
+      const skippedItems = [];
+
+      for (const orderItem of order.items) {
+        const menuItem = currentMenu.find(m => m.name === orderItem.name || m.id === orderItem.id);
+
+        // Check if item is missing, sold out or hidden
+        if (!menuItem || menuItem.isAvailable === false || menuItem.available === false || menuItem.stock === 0) {
+          skippedItems.push(`${orderItem.name} (Sold out)`);
+          continue;
+        }
+
+        if (menuItem.isVisible === false || menuItem.visible === false) {
+          skippedItems.push(`${orderItem.name} (Unavailable)`);
+          continue;
+        }
+
+        // Check stock limitation
+        let quantityToAdd = orderItem.qty || 1;
+        if (menuItem.stock !== null && menuItem.stock !== undefined) {
+          if (quantityToAdd > menuItem.stock) {
+            quantityToAdd = menuItem.stock;
+            skippedItems.push(`${orderItem.name} (Only ${menuItem.stock} left)`);
+          }
+        }
+
+        if (quantityToAdd > 0) {
+          await addToCart({
+            ...menuItem,
+            qty: quantityToAdd
+          });
+          addedItems.push(orderItem.name);
+        }
+      }
+
+      // Outcome evaluation
+      if (addedItems.length === 0) {
+        showToast(`Could not reorder: ${skippedItems.join(', ') || 'All dishes are currently unavailable.'}`, 'error');
+        return;
+      }
+
+      if (skippedItems.length > 0) {
+        showToast(`Added dishes to tray! Skipped: ${skippedItems.join(', ')}`, 'warning');
+      } else {
+        showToast('All items added to your tray!', 'success');
+      }
+
+      // Update navbar cart count
+      await updateNavCartCount();
+
+      // Redirect to cart
+      setTimeout(() => {
+        window.location.href = 'student-cart.html';
+      }, 700);
+    }
+
+    // -------------------------------------------------------------------------
+    // 6. LIVE POLLING & AUTO-REFRESH (10 seconds)
+    // -------------------------------------------------------------------------
+    function startPolling() {
+      if (pollIntervalId) clearInterval(pollIntervalId);
+
+      pollIntervalId = setInterval(async () => {
+        await loadOrders();
+      }, 10000);
+    }
+
+    // Clean up timer on page exit
+    window.addEventListener('beforeunload', () => {
+      if (pollIntervalId) clearInterval(pollIntervalId);
+    });
+
+    // -------------------------------------------------------------------------
+    // 7. NAVBAR & LOGOUT HANDLERS
+    // -------------------------------------------------------------------------
+    function toggleMobileMenu() {
+      const dropdown = document.getElementById('mobileMenuDropdown');
+      if (dropdown) dropdown.classList.toggle('hidden');
+    }
+
+    async function handleLogout() {
+      if (pollIntervalId) clearInterval(pollIntervalId);
+      await logoutUser();
+      showToast('Logged out successfully', 'info');
+      setTimeout(() => {
+        window.location.href = 'login.html';
+      }, 350);
+    }
+
+    // -------------------------------------------------------------------------
+    // 8. FLOATING TOAST NOTIFICATION UTILITY
+    // -------------------------------------------------------------------------
+    function showToast(message, type = 'info') {
+      const container = document.getElementById('toastContainer');
+      if (!container) return;
+
+      const toast = document.createElement('div');
+      let icon = 'ℹ️';
+      let borderAccent = 'var(--primary)';
+
+      if (type === 'success') {
+        icon = '✅';
+        borderAccent = 'var(--success)';
+      } else if (type === 'warning') {
+        icon = '⚠️';
+        borderAccent = 'var(--accent)';
+      } else if (type === 'error') {
+        icon = '❌';
+        borderAccent = 'var(--danger)';
+      }
+
+      toast.className = `pointer-events-auto flex items-center gap-2.5 px-4 py-3 rounded-2xl shadow-xl text-xs font-bold transform transition-all duration-300 translate-y-3 opacity-0`;
+      toast.style.backgroundColor = 'var(--text-dark)';
+      toast.style.color = 'var(--bg-page)';
+      toast.style.border = '1px solid var(--border-soft)';
+      toast.style.borderLeft = `5px solid ${borderAccent}`;
+      toast.style.boxShadow = '0 10px 25px -3px rgba(47, 33, 24, 0.35)';
+      toast.innerHTML = `<span>${icon}</span> <span>${message}</span>`;
+
+      container.appendChild(toast);
+
+      requestAnimationFrame(() => {
+        toast.classList.remove('translate-y-3', 'opacity-0');
+      });
+
+      setTimeout(() => {
+        toast.classList.add('opacity-0', 'translate-y-2');
+        setTimeout(() => toast.remove(), 300);
+      }, 2800);
+    }
+  </script>
+
+</body>
+</html>

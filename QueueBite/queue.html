@@ -1,0 +1,976 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>QueueBite Admin – Live Counter Queue</title>
+  <!-- Tailwind CSS via CDN for base utilities -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <!-- Central Storage Layer -->
+  <script src="storage.js"></script>
+  <!-- Plus Jakarta Sans Font (matches login, admin, overview & orders) -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+
+  <style>
+    /* ========================================================================= */
+    /* THEME: "Cocoa and Cream" (Exact palette from admin.html & orders.html)    */
+    /* ========================================================================= */
+    :root {
+      --bg-page:        #FBF4E9;   /* main cream background */
+      --bg-panel:       #EFE3D3;   /* sidebar, filter bar, toggle tracks, chips */
+      --bg-card:        #FFFFFF;   /* cards, inputs, modal */
+      --bg-notice:      #FAE8D0;   /* info boxes, highlights, tag backgrounds */
+      --border-notice:  #F0C888;   /* border of info boxes */
+      --border-soft:    #E4D6C3;   /* normal card and input borders */
+      --text-dark:      #2F2118;   /* headings and main text */
+      --text-muted:     #6B5645;   /* labels, secondary text */
+      --text-placeholder: #B9AA9A; /* placeholder text */
+      --primary:        #8B5E3C;   /* main buttons, active sidebar item, focused input border */
+      --primary-hover:  #774D2F;   /* button hover */
+      --accent:         #E9A23B;   /* mustard: Placed badge, Bestseller tags, small highlights */
+      --success:        #4F7A4A;   /* Ready badge, pickup buttons */
+      --success-bg:     #E3EFDC;
+      --danger:         #B3453A;   /* Late badge, delete buttons */
+      --danger-bg:      #F7DEDA;
+      --neutral-bg:     #E4DDD3;   /* Hidden badge */
+    }
+
+    body {
+      font-family: 'Plus Jakarta Sans', sans-serif;
+      background-color: var(--bg-page);
+      color: var(--text-dark);
+    }
+
+    /* Input focus styling: 2px primary border */
+    input:focus {
+      outline: none !important;
+      border-color: var(--primary) !important;
+      box-shadow: 0 0 0 3px rgba(139, 94, 60, 0.2) !important;
+    }
+
+    input::placeholder {
+      color: var(--text-placeholder);
+    }
+
+    /* Cards */
+    .dashboard-card {
+      background-color: var(--bg-card);
+      border: 1px solid var(--border-soft);
+      border-radius: 18px;
+      box-shadow: 0 4px 18px -2px rgba(47, 33, 24, 0.05);
+      transition: all 0.2s ease;
+    }
+
+    /* Navigation item hover */
+    .nav-link:hover {
+      background-color: rgba(255, 255, 255, 0.6);
+      color: var(--text-dark);
+    }
+
+    /* Action buttons: big touch targets for canteen staff */
+    .btn-action {
+      min-height: 44px;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: 700;
+      border-radius: 14px;
+      transition: all 0.2s ease;
+      cursor: pointer;
+    }
+    .btn-action:active {
+      transform: scale(0.98);
+    }
+
+    /* Hide scrollbars for cleaner mobile navigation bar */
+    .no-scrollbar::-webkit-scrollbar {
+      display: none;
+    }
+    .no-scrollbar {
+      -ms-overflow-style: none;
+      scrollbar-width: none;
+    }
+  </style>
+</head>
+
+<body class="min-h-screen flex flex-col md:flex-row antialiased">
+
+  <!-- ========================================================================= -->
+  <!-- SIDEBAR NAVIGATION (Matches admin.html, overview.html & orders.html)      -->
+  <!-- ========================================================================= -->
+  <aside class="w-full md:w-64 border-b md:border-b-0 md:border-r flex-shrink-0 z-30 flex flex-col"
+         style="background-color: var(--bg-panel); border-color: var(--border-soft);">
+    
+    <!-- Brand Header -->
+    <div class="p-4 md:p-6 border-b flex items-center justify-between" style="border-color: var(--border-soft);">
+      <div class="flex items-center gap-3">
+        <div class="w-10 h-10 rounded-2xl flex items-center justify-center text-white text-xl shadow-md"
+             style="background-color: var(--primary); box-shadow: 0 4px 14px rgba(139, 94, 60, 0.3);">
+          🍛
+        </div>
+        <div>
+          <h1 class="font-extrabold text-lg leading-tight" style="color: var(--text-dark);">QueueBite</h1>
+          <p class="text-xs font-bold" style="color: var(--primary);">Staff Admin Portal</p>
+        </div>
+      </div>
+      <span class="inline-flex md:hidden text-xs font-bold px-2.5 py-0.5 rounded-full"
+            style="background-color: var(--bg-notice); color: var(--text-dark); border: 1px solid var(--border-notice);">
+        Counter Live
+      </span>
+    </div>
+
+    <!-- Navigation Links -->
+    <nav class="p-3 md:p-4 flex md:flex-col gap-1.5 overflow-x-auto no-scrollbar whitespace-nowrap md:overflow-visible">
+      <!-- Overview Link -->
+      <a href="overview.html" 
+         class="nav-link flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-sm font-semibold transition"
+         style="color: var(--text-muted);">
+        <span class="text-base">📊</span>
+        <span>Overview</span>
+      </a>
+
+      <!-- Orders Link -->
+      <a href="orders.html" 
+         class="nav-link flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-sm font-semibold transition"
+         style="color: var(--text-muted);">
+        <span class="text-base">🧾</span>
+        <span>Orders</span>
+      </a>
+
+      <!-- Queue Link (ACTIVE: white pill with dark text) -->
+      <a href="queue.html" 
+         class="flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-sm font-bold shadow-sm transition"
+         style="background-color: var(--bg-card); color: var(--text-dark); box-shadow: 0 2px 8px rgba(47, 33, 24, 0.08);"
+         aria-current="page">
+        <span class="text-base">⏱️</span>
+        <span>Queue</span>
+      </a>
+
+      <!-- Menu Link -->
+      <a href="admin.html" 
+         class="nav-link flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-sm font-semibold transition"
+         style="color: var(--text-muted);">
+        <span class="text-base">🍽️</span>
+        <span>Menu</span>
+      </a>
+
+      <!-- Slots Link -->
+      <a href="slots.html" 
+         class="nav-link flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-sm font-semibold transition"
+         style="color: var(--text-muted);">
+        <span class="text-base">🕒</span>
+        <span>Slots</span>
+      </a>
+
+      <!-- Logout Link -->
+      <a href="login.html" 
+         onclick="handleLogout(event)"
+         class="flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-sm font-bold md:mt-auto transition hover:opacity-85"
+         style="color: var(--danger);">
+        <span class="text-base">🚪</span>
+        <span>Logout</span>
+      </a>
+    </nav>
+
+    <!-- Sidebar Footer -->
+    <div class="hidden md:block p-4 mt-auto border-t" style="background-color: var(--bg-notice); border-color: var(--border-soft);">
+      <div class="text-xs">
+        <p class="font-bold" style="color: var(--text-dark);">Counter Display</p>
+        <p class="text-[11px] mt-0.5" style="color: var(--text-muted);">Real-time Kitchen & Dispatch</p>
+      </div>
+    </div>
+  </aside>
+
+  <!-- ========================================================================= -->
+  <!-- MAIN WORKSPACE                                                            -->
+  <!-- ========================================================================= -->
+  <main class="flex-1 flex flex-col min-w-0 overflow-y-auto">
+
+    <!-- Top Sticky Header -->
+    <header class="border-b px-4 md:px-8 py-5 sticky top-0 z-20"
+            style="background-color: var(--bg-page); border-color: var(--border-soft);">
+      <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+        <div>
+          <div class="flex items-center gap-3 flex-wrap">
+            <h2 class="text-2xl md:text-3xl font-extrabold tracking-tight" style="color: var(--text-dark);">Queue</h2>
+            <!-- Active Orders Waiting Counter -->
+            <span id="waitingCountBadge" 
+                  class="text-xs md:text-sm font-extrabold px-3 py-1 rounded-full shadow-sm"
+                  style="background-color: var(--bg-notice); color: var(--text-dark); border: 1px solid var(--border-notice);">
+              0 orders waiting
+            </span>
+          </div>
+          <p class="text-xs md:text-sm mt-1" style="color: var(--text-muted);">
+            Live counter display for kitchen preparation and student collection
+          </p>
+        </div>
+
+        <!-- Clock & Live Status Pill -->
+        <div class="flex items-center gap-3">
+          <!-- Real-time Clock (Updating every second) -->
+          <div class="flex items-center gap-2 px-3.5 py-2 rounded-2xl shadow-sm border"
+               style="background-color: var(--bg-card); border-color: var(--border-soft);">
+            <span class="w-2.5 h-2.5 rounded-full animate-pulse" style="background-color: var(--success);"></span>
+            <span id="liveClock" class="font-mono text-sm md:text-base font-extrabold tracking-wide" style="color: var(--text-dark);">
+              --:--:-- --
+            </span>
+          </div>
+
+          <!-- Instant Refresh Trigger -->
+          <button onclick="loadOrders(); showToast('Queue refreshed', 'info');"
+                  title="Refresh Queue"
+                  class="p-2.5 rounded-2xl border transition hover:opacity-80 active:scale-95"
+                  style="background-color: var(--bg-panel); border-color: var(--border-soft); color: var(--text-dark);">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+            </svg>
+          </button>
+        </div>
+      </div>
+    </header>
+
+    <!-- Content Body -->
+    <div class="p-4 md:p-8 space-y-6">
+
+      <!-- ===================================================================== -->
+      <!-- TOP SECTION: NOW SERVING HERO CARD + FAST VERIFY BOX                  -->
+      <!-- ===================================================================== -->
+      <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+
+        <!-- 1. NOW SERVING HERO CARD (Spans 2 columns on large screens) -->
+        <div class="lg:col-span-2 dashboard-card p-5 md:p-6 flex flex-col justify-between"
+             style="border-left: 6px solid var(--success);">
+          <div>
+            <div class="flex items-center justify-between mb-3">
+              <span class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-extrabold tracking-wider uppercase"
+                    style="background-color: var(--success-bg); color: var(--success); border: 1px solid rgba(79, 122, 74, 0.25);">
+                <span class="w-2 h-2 rounded-full animate-ping" style="background-color: var(--success);"></span>
+                Now Serving at Counter
+              </span>
+              <span id="nowServingSlotBadge" class="text-xs font-bold" style="color: var(--text-muted);"></span>
+            </div>
+
+            <!-- Dynamic Now Serving Content -->
+            <div id="nowServingContainer">
+              <!-- Rendered via renderNowServing() -->
+            </div>
+          </div>
+        </div>
+
+        <!-- 2. FAST TOKEN VERIFY BOX (Counter Staff Input) -->
+        <div class="dashboard-card p-5 md:p-6 flex flex-col justify-between"
+             style="border-top: 4px solid var(--primary);">
+          <div>
+            <div class="flex items-center justify-between mb-2">
+              <h3 class="font-extrabold text-base" style="color: var(--text-dark);">
+                🔎 Verify Token
+              </h3>
+              <span class="text-[11px] font-bold px-2 py-0.5 rounded-md"
+                    style="background-color: var(--bg-panel); color: var(--text-muted);">
+                Instant Search
+              </span>
+            </div>
+            <p class="text-xs mb-3.5" style="color: var(--text-muted);">
+              Type token number to check status or confirm collection.
+            </p>
+
+            <!-- Search Input and Button -->
+            <div class="flex gap-2">
+              <input type="text"
+                     id="verifyTokenInput"
+                     placeholder="e.g. #042 or 42"
+                     autocomplete="off"
+                     class="flex-1 px-3.5 py-2.5 rounded-xl border text-sm font-bold transition"
+                     style="background-color: var(--bg-card); border-color: var(--border-soft); color: var(--text-dark);" />
+              <button onclick="handleVerifyToken()"
+                      id="btnVerify"
+                      class="btn-action px-4 py-2.5 text-white text-sm shadow-sm hover:opacity-90 active:scale-95"
+                      style="background-color: var(--primary);">
+                Verify
+              </button>
+            </div>
+          </div>
+
+          <!-- Verify Result Box -->
+          <div id="verifyResultBox" class="mt-4 pt-3 border-t" style="border-color: var(--border-soft);">
+            <p class="text-xs font-semibold text-center py-2" style="color: var(--text-placeholder);">
+              Enter a token number above to verify.
+            </p>
+          </div>
+        </div>
+
+      </div>
+
+      <!-- ===================================================================== -->
+      <!-- 3 KANBAN COLUMNS (Placed, Preparing, Ready for Pickup)                -->
+      <!-- ===================================================================== -->
+      <div>
+        <div class="mb-4 flex items-center justify-between">
+          <h3 class="text-lg font-extrabold" style="color: var(--text-dark);">
+            Active Orders Pipeline
+          </h3>
+          <span class="text-xs font-semibold" style="color: var(--text-muted);">
+            Sorted by slot time &bull; Auto-syncs every 5s
+          </span>
+        </div>
+
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+
+          <!-- COLUMN 1: PLACED (Waiting to start) -->
+          <div class="flex flex-col">
+            <!-- Column Header -->
+            <div class="flex items-center justify-between p-3.5 rounded-t-2xl border-t border-x"
+                 style="background-color: var(--bg-panel); border-color: var(--border-soft); border-top: 4px solid var(--accent);">
+              <div class="flex items-center gap-2">
+                <span class="w-3 h-3 rounded-full" style="background-color: var(--accent);"></span>
+                <span class="font-extrabold text-sm" style="color: var(--text-dark);">Placed</span>
+                <span id="placedCount" class="text-xs font-extrabold px-2 py-0.5 rounded-full"
+                      style="background-color: var(--bg-card); color: var(--text-dark);">0</span>
+              </div>
+              <span class="text-[11px] font-bold" style="color: var(--text-muted);">Waiting to start</span>
+            </div>
+
+            <!-- Column Body -->
+            <div id="colPlaced"
+                 class="flex-1 p-3.5 space-y-3 rounded-b-2xl border border-t-0 min-h-[300px]"
+                 style="background-color: rgba(239, 227, 211, 0.35); border-color: var(--border-soft);">
+              <!-- Order cards inserted here -->
+            </div>
+          </div>
+
+          <!-- COLUMN 2: PREPARING (In kitchen) -->
+          <div class="flex flex-col">
+            <!-- Column Header -->
+            <div class="flex items-center justify-between p-3.5 rounded-t-2xl border-t border-x"
+                 style="background-color: var(--bg-panel); border-color: var(--border-soft); border-top: 4px solid var(--primary);">
+              <div class="flex items-center gap-2">
+                <span class="w-3 h-3 rounded-full" style="background-color: var(--primary);"></span>
+                <span class="font-extrabold text-sm" style="color: var(--text-dark);">Preparing</span>
+                <span id="preparingCount" class="text-xs font-extrabold px-2 py-0.5 rounded-full"
+                      style="background-color: var(--bg-card); color: var(--text-dark);">0</span>
+              </div>
+              <span class="text-[11px] font-bold" style="color: var(--text-muted);">In kitchen</span>
+            </div>
+
+            <!-- Column Body -->
+            <div id="colPreparing"
+                 class="flex-1 p-3.5 space-y-3 rounded-b-2xl border border-t-0 min-h-[300px]"
+                 style="background-color: rgba(239, 227, 211, 0.35); border-color: var(--border-soft);">
+              <!-- Order cards inserted here -->
+            </div>
+          </div>
+
+          <!-- COLUMN 3: READY FOR PICKUP (Waiting at counter) -->
+          <div class="flex flex-col">
+            <!-- Column Header -->
+            <div class="flex items-center justify-between p-3.5 rounded-t-2xl border-t border-x"
+                 style="background-color: var(--bg-panel); border-color: var(--border-soft); border-top: 4px solid var(--success);">
+              <div class="flex items-center gap-2">
+                <span class="w-3 h-3 rounded-full" style="background-color: var(--success);"></span>
+                <span class="font-extrabold text-sm" style="color: var(--text-dark);">Ready for pickup</span>
+                <span id="readyCount" class="text-xs font-extrabold px-2 py-0.5 rounded-full"
+                      style="background-color: var(--bg-card); color: var(--text-dark);">0</span>
+              </div>
+              <span class="text-[11px] font-bold" style="color: var(--text-muted);">At counter</span>
+            </div>
+
+            <!-- Column Body -->
+            <div id="colReady"
+                 class="flex-1 p-3.5 space-y-3 rounded-b-2xl border border-t-0 min-h-[300px]"
+                 style="background-color: rgba(239, 227, 211, 0.35); border-color: var(--border-soft);">
+              <!-- Order cards inserted here -->
+            </div>
+          </div>
+
+        </div>
+      </div>
+
+    </div>
+  </main>
+
+  <!-- ========================================================================= -->
+  <!-- TOAST NOTIFICATION CONTAINER (Matches admin.html and orders.html)         -->
+  <!-- ========================================================================= -->
+  <div id="toastContainer" 
+       class="fixed bottom-5 right-5 z-50 flex flex-col gap-2.5 pointer-events-none max-w-sm w-full px-4 sm:px-0">
+  </div>
+
+  <!-- ========================================================================= -->
+  <!-- JAVASCRIPT LOGIC                                                          -->
+  <!-- ========================================================================= -->
+  <script>
+    // -------------------------------------------------------------------------
+    // 1. DATA ACCESS & STORAGE LAYER
+    // -------------------------------------------------------------------------
+    // Orders access, order status transitions, and token verification are handled
+    // by storage.js (getOrders, updateOrderStatus, verifyToken, etc.)
+
+    // -------------------------------------------------------------------------
+    // 2. HELPER UTILITIES: TIME PARSING, LATE CHECK & ITEMS SUMMARY
+    // -------------------------------------------------------------------------
+
+    /**
+     * Converts a slot time string (like "1:10 PM", "12:40 PM") into minutes from midnight
+     */
+    function parseSlotMinutes(slotStr) {
+      if (!slotStr) return 9999;
+      // Handle ranges like "12:15 PM - 12:30 PM"
+      const firstPart = slotStr.split('-')[0].trim();
+      const match = firstPart.match(/(\d+):(\d+)\s*(AM|PM)?/i);
+      if (!match) return 9999;
+
+      let hours = parseInt(match[1], 10);
+      const minutes = parseInt(match[2], 10);
+      const ampm = match[3] ? match[3].toUpperCase() : null;
+
+      if (ampm === 'PM' && hours < 12) hours += 12;
+      if (ampm === 'AM' && hours === 12) hours = 0;
+
+      return hours * 60 + minutes;
+    }
+
+    /**
+     * Checks if an order is late:
+     * "if the slot time has passed by more than 10 minutes and it is not Ready or Collected"
+     */
+    function isOrderLate(order) {
+      if (order.orderStatus === 'Ready' || order.orderStatus === 'Collected') {
+        return false;
+      }
+      const slotMins = parseSlotMinutes(order.slotTime);
+      if (slotMins === 9999) return false;
+
+      const now = new Date();
+      const nowMins = now.getHours() * 60 + now.getMinutes();
+
+      // Current time is > 10 minutes past slot time
+      return (nowMins - slotMins) > 10;
+    }
+
+    /**
+     * Summarizes item list into a concise string, e.g. "2x Samosa, 1x Tea"
+     */
+    function formatItemsSummary(items) {
+      if (!items || !items.length) return 'No items specified';
+      return items.map(i => `${i.qty || 1}x ${i.name}`).join(', ');
+    }
+
+    // -------------------------------------------------------------------------
+    // 3. CORE LOGIC: LOAD & RENDER QUEUE
+    // -------------------------------------------------------------------------
+
+    /**
+     * Main function: reads orders, updates waiting count, and re-renders UI components
+     */
+    async function loadOrders() {
+      const allOrders = await getOrders();
+
+      // Active orders only: Placed, Preparing, Ready
+      // Collected, Cancelled and Missed are excluded from the queue
+      const activeOrders = allOrders.filter(o => 
+        o.orderStatus === 'Placed' || 
+        o.orderStatus === 'Preparing' || 
+        o.orderStatus === 'Ready'
+      );
+
+      // Update Header Waiting Count Badge
+      const countBadge = document.getElementById('waitingCountBadge');
+      if (countBadge) {
+        countBadge.textContent = `${activeOrders.length} order${activeOrders.length === 1 ? '' : 's'} waiting`;
+      }
+
+      // Render Now Serving Hero Card
+      renderNowServing(allOrders);
+
+      // Render 3 Columns
+      renderColumns(activeOrders);
+    }
+
+    /**
+     * Renders the top "Now Serving" Hero Card
+     * Shows first Ready order sorted by slot time
+     */
+    function renderNowServing(orders) {
+      const container = document.getElementById('nowServingContainer');
+      const slotBadge = document.getElementById('nowServingSlotBadge');
+      if (!container) return;
+
+      // Filter only Ready orders, sorted earliest slot first
+      const readyOrders = orders
+        .filter(o => o.orderStatus === 'Ready')
+        .sort((a, b) => parseSlotMinutes(a.slotTime) - parseSlotMinutes(b.slotTime));
+
+      if (readyOrders.length === 0) {
+        if (slotBadge) slotBadge.textContent = '';
+        container.innerHTML = `
+          <div class="py-6 text-center">
+            <div class="text-3xl mb-1.5 opacity-80">🍽️</div>
+            <h4 class="text-base md:text-lg font-extrabold" style="color: var(--text-dark);">
+              No order ready yet
+            </h4>
+            <p class="text-xs md:text-sm font-semibold mt-0.5" style="color: var(--text-muted);">
+              Orders marked ready in the kitchen will show here for counter collection.
+            </p>
+          </div>
+        `;
+        return;
+      }
+
+      const topOrder = readyOrders[0];
+      if (slotBadge) {
+        slotBadge.textContent = `Slot: ${topOrder.slotTime}`;
+      }
+
+      container.innerHTML = `
+        <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pt-1">
+          <div class="space-y-1">
+            <div class="flex items-center gap-3">
+              <span class="text-4xl sm:text-5xl md:text-6xl font-black tracking-tight"
+                    style="color: var(--primary);">
+                ${topOrder.token}
+              </span>
+              <span class="text-xs font-bold px-2.5 py-1 rounded-full text-white"
+                    style="background-color: var(--success);">
+                Ready
+              </span>
+            </div>
+            <h4 class="text-lg md:text-xl font-extrabold" style="color: var(--text-dark);">
+              ${topOrder.studentName}
+            </h4>
+            <p class="text-sm font-semibold" style="color: var(--text-muted);">
+              ${formatItemsSummary(topOrder.items)}
+            </p>
+          </div>
+
+          <!-- Big Confirm Pickup Button -->
+          <div class="sm:flex-shrink-0">
+            <button onclick="advanceStatus('${topOrder.id}', 'Collected')"
+                    class="btn-action w-full sm:w-auto px-6 py-4 text-white text-base md:text-lg shadow-md hover:opacity-90"
+                    style="background-color: var(--success); box-shadow: 0 6px 18px rgba(79, 122, 74, 0.3);">
+              <span>✅ Confirm pickup</span>
+            </button>
+          </div>
+        </div>
+      `;
+    }
+
+    /**
+     * Renders the 3 Kanban Columns: Placed, Preparing, Ready
+     */
+    function renderColumns(activeOrders) {
+      const colPlaced = document.getElementById('colPlaced');
+      const colPreparing = document.getElementById('colPreparing');
+      const colReady = document.getElementById('colReady');
+
+      const placedOrders = activeOrders
+        .filter(o => o.orderStatus === 'Placed')
+        .sort((a, b) => parseSlotMinutes(a.slotTime) - parseSlotMinutes(b.slotTime));
+
+      const preparingOrders = activeOrders
+        .filter(o => o.orderStatus === 'Preparing')
+        .sort((a, b) => parseSlotMinutes(a.slotTime) - parseSlotMinutes(b.slotTime));
+
+      const readyOrders = activeOrders
+        .filter(o => o.orderStatus === 'Ready')
+        .sort((a, b) => parseSlotMinutes(a.slotTime) - parseSlotMinutes(b.slotTime));
+
+      // Update Column Counts
+      document.getElementById('placedCount').textContent = placedOrders.length;
+      document.getElementById('preparingCount').textContent = preparingOrders.length;
+      document.getElementById('readyCount').textContent = readyOrders.length;
+
+      // 1. Render Placed Column
+      if (placedOrders.length === 0) {
+        colPlaced.innerHTML = renderEmptyState();
+      } else {
+        colPlaced.innerHTML = placedOrders.map(order => renderOrderCard(order, 'Placed')).join('');
+      }
+
+      // 2. Render Preparing Column
+      if (preparingOrders.length === 0) {
+        colPreparing.innerHTML = renderEmptyState();
+      } else {
+        colPreparing.innerHTML = preparingOrders.map(order => renderOrderCard(order, 'Preparing')).join('');
+      }
+
+      // 3. Render Ready Column
+      if (readyOrders.length === 0) {
+        colReady.innerHTML = renderEmptyState();
+      } else {
+        colReady.innerHTML = readyOrders.map(order => renderOrderCard(order, 'Ready')).join('');
+      }
+    }
+
+    /**
+     * Helper to render empty column state
+     */
+    function renderEmptyState() {
+      return `
+        <div class="h-44 flex flex-col items-center justify-center p-4 text-center rounded-2xl border border-dashed"
+             style="background-color: rgba(255, 255, 255, 0.5); border-color: var(--border-soft); color: var(--text-placeholder);">
+          <span class="text-2xl mb-1 opacity-70">✨</span>
+          <p class="text-xs font-bold" style="color: var(--text-muted);">No orders here</p>
+        </div>
+      `;
+    }
+
+    /**
+     * Helper to render an individual order card inside a column
+     */
+    function renderOrderCard(order, columnStatus) {
+      const isLate = isOrderLate(order);
+      const lateBadgeHtml = isLate ? `
+        <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[11px] font-extrabold"
+              style="background-color: var(--danger-bg); color: var(--danger); border: 1px solid rgba(179, 69, 58, 0.3);">
+          ⚠️ Late
+        </span>
+      ` : '';
+
+      // Determine action button
+      let actionBtn = '';
+      if (columnStatus === 'Placed') {
+        actionBtn = `
+          <button onclick="advanceStatus('${order.id}', 'Preparing')"
+                  class="btn-action w-full py-2.5 text-xs md:text-sm font-bold text-white shadow-sm hover:opacity-90"
+                  style="background-color: var(--primary);">
+            Start preparing
+          </button>
+        `;
+      } else if (columnStatus === 'Preparing') {
+        actionBtn = `
+          <button onclick="advanceStatus('${order.id}', 'Ready')"
+                  class="btn-action w-full py-2.5 text-xs md:text-sm font-bold text-white shadow-sm hover:opacity-90"
+                  style="background-color: var(--success);">
+            Mark ready
+          </button>
+        `;
+      } else if (columnStatus === 'Ready') {
+        actionBtn = `
+          <button onclick="advanceStatus('${order.id}', 'Collected')"
+                  class="btn-action w-full py-2.5 text-xs md:text-sm font-bold text-white shadow-sm hover:opacity-90"
+                  style="background-color: var(--success); box-shadow: 0 4px 12px rgba(79, 122, 74, 0.25);">
+            Confirm pickup
+          </button>
+        `;
+      }
+
+      return `
+        <div class="dashboard-card p-4 flex flex-col justify-between gap-3"
+             style="${isLate ? 'border-left: 4px solid var(--danger);' : ''}">
+          <div>
+            <!-- Token, Slot Time & Late Badge -->
+            <div class="flex items-center justify-between gap-2">
+              <span class="text-xl font-extrabold tracking-tight" style="color: var(--primary);">
+                ${order.token}
+              </span>
+              <div class="flex items-center gap-1.5">
+                ${lateBadgeHtml}
+                <span class="text-xs font-bold px-2 py-0.5 rounded-md"
+                      style="background-color: var(--bg-panel); color: var(--text-dark);">
+                  🕒 ${order.slotTime}
+                </span>
+              </div>
+            </div>
+
+            <!-- Student Name -->
+            <h4 class="font-bold text-sm mt-1" style="color: var(--text-dark);">
+              ${order.studentName}
+            </h4>
+
+            <!-- Items Summary -->
+            <p class="text-xs font-semibold mt-1 leading-snug" style="color: var(--text-muted);">
+              ${formatItemsSummary(order.items)}
+            </p>
+          </div>
+
+          <!-- Bottom Action Button -->
+          <div class="pt-1">
+            ${actionBtn}
+          </div>
+        </div>
+      `;
+    }
+
+    // -------------------------------------------------------------------------
+    // 4. STATUS ADVANCEMENT & VALID TRANSITIONS
+    // -------------------------------------------------------------------------
+
+    /**
+     * Advances an order to the next status via storage.js updateOrderStatus()
+     * Allowed transitions: Placed -> Preparing -> Ready -> Collected
+     */
+    async function advanceStatus(orderId, targetStatus) {
+      try {
+        const updated = await updateOrderStatus(orderId, targetStatus);
+        if (!updated) return;
+
+        // Toast worded identically to the buttons
+        let toastMessage = 'Status updated';
+        if (targetStatus === 'Preparing') toastMessage = 'Started preparing';
+        if (targetStatus === 'Ready') toastMessage = 'Marked ready';
+        if (targetStatus === 'Collected') toastMessage = 'Pickup confirmed';
+
+        showToast(toastMessage, 'success');
+
+        // Instant re-render
+        await loadOrders();
+
+        // If verify box was open for this token, update its result
+        const verifyInput = document.getElementById('verifyTokenInput');
+        if (verifyInput && verifyInput.value.trim()) {
+          await handleVerifyToken();
+        }
+      } catch (err) {
+        console.error('Failed to advance order status:', err);
+        showToast('Failed to update status', 'error');
+      }
+    }
+
+    // -------------------------------------------------------------------------
+    // 5. TOKEN VERIFICATION BOX
+    // -------------------------------------------------------------------------
+
+    /**
+     * Checks input token and renders clear result message or confirmation button
+     */
+    async function handleVerifyToken() {
+      const input = document.getElementById('verifyTokenInput');
+      const resultBox = document.getElementById('verifyResultBox');
+      if (!input || !resultBox) return;
+
+      const query = input.value.trim();
+      if (!query) {
+        resultBox.innerHTML = `
+          <p class="text-xs font-semibold text-center py-2" style="color: var(--text-placeholder);">
+            Enter a token number above to verify.
+          </p>
+        `;
+        return;
+      }
+
+      // Query order via storage.js verifyToken(tokenQuery)
+      const found = await verifyToken(query);
+
+      // Token not found
+      if (!found) {
+        resultBox.innerHTML = `
+          <div class="p-3 rounded-xl border text-center text-xs font-extrabold"
+               style="background-color: var(--danger-bg); border-color: rgba(179, 69, 58, 0.3); color: var(--danger);">
+            ❌ Token not found
+          </div>
+        `;
+        return;
+      }
+
+      // If Ready: show student name, items, and big "Confirm pickup" button
+      if (found.orderStatus === 'Ready') {
+        resultBox.innerHTML = `
+          <div class="p-3.5 rounded-xl border space-y-2.5"
+               style="background-color: var(--success-bg); border-color: rgba(79, 122, 74, 0.3);">
+            <div class="flex items-center justify-between">
+              <span class="text-xs font-extrabold text-white px-2 py-0.5 rounded-md"
+                    style="background-color: var(--success);">
+                Ready for Pickup
+              </span>
+              <span class="text-xs font-bold" style="color: var(--text-dark);">
+                Slot: ${found.slotTime}
+              </span>
+            </div>
+            <div>
+              <p class="font-extrabold text-sm" style="color: var(--text-dark);">
+                ${found.token} &bull; ${found.studentName}
+              </p>
+              <p class="text-xs font-semibold mt-0.5" style="color: var(--text-muted);">
+                ${formatItemsSummary(found.items)}
+              </p>
+            </div>
+            <button onclick="advanceStatus('${found.id}', 'Collected')"
+                    class="btn-action w-full py-2.5 text-xs md:text-sm font-extrabold text-white shadow-sm hover:opacity-90"
+                    style="background-color: var(--success);">
+              Confirm pickup
+            </button>
+          </div>
+        `;
+        return;
+      }
+
+      // If Placed
+      if (found.orderStatus === 'Placed') {
+        resultBox.innerHTML = `
+          <div class="p-3 rounded-xl border text-center text-xs font-bold"
+               style="background-color: var(--bg-notice); border-color: var(--border-notice); color: var(--text-dark);">
+            ⏳ Order <strong>${found.token}</strong> is placed (waiting to start preparing)
+          </div>
+        `;
+        return;
+      }
+
+      // If Preparing
+      if (found.orderStatus === 'Preparing') {
+        resultBox.innerHTML = `
+          <div class="p-3 rounded-xl border text-center text-xs font-bold"
+               style="background-color: var(--bg-notice); border-color: var(--border-notice); color: var(--text-dark);">
+            👨‍🍳 Order <strong>${found.token}</strong> is still being prepared
+          </div>
+        `;
+        return;
+      }
+
+      // If Collected
+      if (found.orderStatus === 'Collected') {
+        resultBox.innerHTML = `
+          <div class="p-3 rounded-xl border text-center text-xs font-bold"
+               style="background-color: var(--bg-panel); border-color: var(--border-soft); color: var(--text-muted);">
+            ✅ Order <strong>${found.token}</strong> has already been collected
+          </div>
+        `;
+        return;
+      }
+
+      // If Cancelled or Missed
+      if (found.orderStatus === 'Cancelled') {
+        resultBox.innerHTML = `
+          <div class="p-3 rounded-xl border text-center text-xs font-bold"
+               style="background-color: var(--danger-bg); border-color: rgba(179, 69, 58, 0.3); color: var(--danger);">
+            🚫 Order <strong>${found.token}</strong> was cancelled
+          </div>
+        `;
+        return;
+      }
+
+      if (found.orderStatus === 'Missed') {
+        resultBox.innerHTML = `
+          <div class="p-3 rounded-xl border text-center text-xs font-bold"
+               style="background-color: var(--bg-panel); border-color: var(--border-soft); color: var(--text-muted);">
+            ⚠️ Order <strong>${found.token}</strong> was marked as missed
+          </div>
+        `;
+        return;
+      }
+    }
+
+    // -------------------------------------------------------------------------
+    // 6. LIVE SECOND-BY-SECOND CLOCK
+    // -------------------------------------------------------------------------
+    function updateClock() {
+      const now = new Date();
+      const clockEl = document.getElementById('liveClock');
+      if (clockEl) {
+        clockEl.textContent = now.toLocaleTimeString('en-US', {
+          hour: 'numeric',
+          minute: '2-digit',
+          second: '2-digit',
+          hour12: true
+        });
+      }
+    }
+
+    // -------------------------------------------------------------------------
+    // 7. TOAST NOTIFICATION UTILITY (Cocoa & Cream Dark Toast)
+    // -------------------------------------------------------------------------
+    function showToast(message, type = 'info') {
+      const container = document.getElementById('toastContainer');
+      if (!container) return;
+
+      const toast = document.createElement('div');
+      let icon = 'ℹ️';
+      let borderAccent = 'var(--primary)';
+
+      if (type === 'success') {
+        icon = '✅';
+        borderAccent = 'var(--success)';
+      } else if (type === 'error') {
+        icon = '❌';
+        borderAccent = 'var(--danger)';
+      }
+
+      toast.className = `pointer-events-auto flex items-center gap-2.5 px-4 py-3 rounded-2xl shadow-xl text-xs font-bold transform transition-all duration-300 translate-y-3 opacity-0`;
+      toast.style.backgroundColor = 'var(--text-dark)';
+      toast.style.color = 'var(--bg-page)';
+      toast.style.border = '1px solid var(--border-soft)';
+      toast.style.borderLeft = `5px solid ${borderAccent}`;
+      toast.style.boxShadow = '0 10px 25px -3px rgba(47, 33, 24, 0.35)';
+      toast.innerHTML = `<span>${icon}</span> <span>${message}</span>`;
+
+      container.appendChild(toast);
+
+      requestAnimationFrame(() => {
+        toast.classList.remove('translate-y-3', 'opacity-0');
+      });
+
+      setTimeout(() => {
+        toast.classList.add('opacity-0', 'translate-y-2');
+        setTimeout(() => toast.remove(), 300);
+      }, 2800);
+    }
+
+    // -------------------------------------------------------------------------
+    // 8. LOGOUT & AUTH GUARD
+    // -------------------------------------------------------------------------
+    async function handleLogout(event) {
+      if (event) event.preventDefault();
+      await logoutUser();
+      window.location.href = 'login.html';
+    }
+
+    // -------------------------------------------------------------------------
+    // 9. INITIALIZATION & TIMERS
+    // -------------------------------------------------------------------------
+    let refreshInterval = null;
+    let clockInterval = null;
+
+    function startAutoRefresh() {
+      if (refreshInterval) clearInterval(refreshInterval);
+      refreshInterval = setInterval(async () => {
+        await loadOrders();
+      }, 5000);
+    }
+
+    function startClock() {
+      if (clockInterval) clearInterval(clockInterval);
+      updateClock();
+      clockInterval = setInterval(updateClock, 1000);
+    }
+
+    document.addEventListener('DOMContentLoaded', async () => {
+      // 1. Auth Guard: Admin access only
+      const session = await getSession();
+      if (!session || session.role !== 'admin') {
+        window.location.href = 'login.html';
+        return;
+      }
+
+      // 2. Initial render
+      await loadOrders();
+
+      // 3. Start Live Clock
+      startClock();
+
+      // 4. Auto-refresh every 5 seconds for new student orders
+      startAutoRefresh();
+
+      // 5. Cross-tab sync: detect new orders placed or status changes in other tabs
+      window.addEventListener('storage', async (event) => {
+        const orderKey = typeof STORAGE_KEYS !== 'undefined' ? STORAGE_KEYS.ORDERS : 'cubite_orders';
+        if (event.key === orderKey) {
+          await loadOrders();
+        }
+      });
+
+      // 6. Handle Enter key in Token Verification input
+      const verifyInput = document.getElementById('verifyTokenInput');
+      if (verifyInput) {
+        verifyInput.addEventListener('keydown', async (e) => {
+          if (e.key === 'Enter') {
+            e.preventDefault();
+            await handleVerifyToken();
+          }
+        });
+      }
+    });
+  </script>
+
+</body>
+</html>

@@ -1,0 +1,1436 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>QueueBite Admin – Menu Management</title>
+  <!-- Tailwind CSS via CDN for base utilities -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <!-- QueueBite Central Data Storage Layer -->
+  <script src="storage.js"></script>
+  <!-- Plus Jakarta Sans Font (same as login page) -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+
+  <style>
+    /* ========================================================================= */
+    /* THEME: "Cocoa and Cream" (Exact palette from login page)                  */
+    /* ========================================================================= */
+    :root {
+      --bg-page:        #FBF4E9;   /* main cream background */
+      --bg-panel:       #EFE3D3;   /* sidebar, filter bar, toggle tracks, chips */
+      --bg-card:        #FFFFFF;   /* cards, inputs, modal */
+      --bg-notice:      #FAE8D0;   /* info boxes, highlights, tag backgrounds */
+      --border-notice:  #F0C888;   /* border of info boxes */
+      --border-soft:    #E4D6C3;   /* normal card and input borders */
+      --text-dark:      #2F2118;   /* headings and main text */
+      --text-muted:     #6B5645;   /* labels, secondary text */
+      --text-placeholder: #B9AA9A; /* placeholder text */
+      --primary:        #8B5E3C;   /* main buttons, active sidebar item, focused input border */
+      --primary-hover:  #774D2F;   /* button hover */
+      --accent:         #E9A23B;   /* mustard: Bestseller / Special tags, small highlights */
+      --success:        #4F7A4A;   /* "Available" badge text and veg dot */
+      --success-bg:     #E3EFDC;
+      --danger:         #B3453A;   /* "Sold out" badge, delete button, non-veg dot */
+      --danger-bg:      #F7DEDA;
+      --neutral-bg:     #E4DDD3;   /* "Hidden" badge */
+    }
+
+    body {
+      font-family: 'Plus Jakarta Sans', sans-serif;
+      background-color: var(--bg-page);
+      color: var(--text-dark);
+    }
+
+    /* Modal Backdrop */
+    dialog::backdrop {
+      background: rgba(47, 33, 24, 0.45);
+      backdrop-filter: blur(3px);
+    }
+
+    /* Smooth dialog open animation */
+    dialog[open] {
+      animation: dialogZoom 0.2s ease-out forwards;
+    }
+
+    @keyframes dialogZoom {
+      from {
+        opacity: 0;
+        transform: scale(0.96) translateY(8px);
+      }
+      to {
+        opacity: 1;
+        transform: scale(1) translateY(0);
+      }
+    }
+
+    /* Input and Select focus styling: 2px primary border */
+    input:focus, select:focus, textarea:focus {
+      outline: none !important;
+      border-color: var(--primary) !important;
+      box-shadow: 0 0 0 2px rgba(139, 94, 60, 0.2) !important;
+    }
+
+    input::placeholder, textarea::placeholder {
+      color: var(--text-placeholder);
+    }
+
+    /* Primary buttons hover and click */
+    .btn-primary {
+      background-color: var(--primary);
+      color: #FFFFFF;
+      border-radius: 16px;
+      box-shadow: 0 6px 18px -2px rgba(139, 94, 60, 0.25);
+      transition: all 0.2s ease;
+    }
+    .btn-primary:hover {
+      background-color: var(--primary-hover);
+      box-shadow: 0 8px 22px -2px rgba(139, 94, 60, 0.35);
+    }
+    .btn-primary:active {
+      transform: scale(0.98);
+    }
+
+    /* Navigation item hover */
+    .nav-link:hover {
+      background-color: rgba(255, 255, 255, 0.6);
+      color: var(--text-dark);
+    }
+
+    /* Custom scrollbar helpers */
+    .no-scrollbar::-webkit-scrollbar {
+      display: none;
+    }
+    .no-scrollbar {
+      -ms-overflow-style: none;
+      scrollbar-width: none;
+    }
+  </style>
+</head>
+
+<body class="min-h-screen flex flex-col md:flex-row antialiased">
+
+  <!-- ========================================================================= -->
+  <!-- SIDEBAR NAVIGATION (Desktop: Left Bar / Mobile: Top Horizontal Scroll)     -->
+  <!-- ========================================================================= -->
+  <aside class="w-full md:w-64 border-b md:border-b-0 md:border-r flex-shrink-0 z-30 flex flex-col"
+         style="background-color: var(--bg-panel); border-color: var(--border-soft);">
+    
+    <!-- Brand / Canteen Title -->
+    <div class="p-4 md:p-6 border-b flex items-center justify-between" style="border-color: var(--border-soft);">
+      <div class="flex items-center gap-3">
+        <div class="w-10 h-10 rounded-2xl flex items-center justify-center text-white text-xl shadow-md"
+             style="background-color: var(--primary); box-shadow: 0 4px 14px rgba(139, 94, 60, 0.3);">
+          🍛
+        </div>
+        <div>
+          <h1 class="font-extrabold text-lg leading-tight" style="color: var(--text-dark);">QueueBite</h1>
+          <p class="text-xs font-bold" style="color: var(--primary);">Staff Admin Portal</p>
+        </div>
+      </div>
+      <span class="inline-flex md:hidden text-xs font-bold px-2.5 py-0.5 rounded-full"
+            style="background-color: var(--bg-notice); color: var(--text-dark); border: 1px solid var(--border-notice);">
+        Canteen
+      </span>
+    </div>
+
+    <!-- Navigation Links -->
+    <nav class="p-3 md:p-4 flex md:flex-col gap-1.5 overflow-x-auto no-scrollbar whitespace-nowrap md:overflow-visible">
+      <!-- Overview Link -->
+      <a href="overview.html" 
+         class="nav-link flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-sm font-semibold transition"
+         style="color: var(--text-muted);">
+        <span class="text-base">📊</span>
+        <span>Overview</span>
+      </a>
+
+      <!-- Orders Link -->
+      <a href="orders.html" 
+         class="nav-link flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-sm font-semibold transition"
+         style="color: var(--text-muted);">
+        <span class="text-base">🧾</span>
+        <span>Orders</span>
+      </a>
+
+      <!-- Queue Link -->
+      <a href="queue.html" 
+         class="nav-link flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-sm font-semibold transition"
+         style="color: var(--text-muted);">
+        <span class="text-base">⏱️</span>
+        <span>Queue</span>
+      </a>
+
+      <!-- Menu Link (ACTIVE: white pill with dark text) -->
+      <a href="admin.html" 
+         class="flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-sm font-bold shadow-sm transition"
+         style="background-color: var(--bg-card); color: var(--text-dark); box-shadow: 0 2px 8px rgba(47, 33, 24, 0.08);"
+         aria-current="page">
+        <span class="text-base">🍽️</span>
+        <span>Menu</span>
+      </a>
+
+      <!-- Slots Link -->
+      <a href="slots.html" 
+         class="nav-link flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-sm font-semibold transition"
+         style="color: var(--text-muted);">
+        <span class="text-base">🕒</span>
+        <span>Slots</span>
+      </a>
+
+      <!-- Logout Link -->
+      <a href="login.html" 
+         onclick="handleLogout(event)"
+         class="flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-sm font-bold md:mt-auto transition hover:opacity-85"
+         style="color: var(--danger);">
+        <span class="text-base">🚪</span>
+        <span>Logout</span>
+      </a>
+    </nav>
+
+    <!-- Sidebar Footer (Desktop Only) -->
+    <div class="hidden md:block p-4 mt-auto border-t" style="background-color: var(--bg-notice); border-color: var(--border-soft);">
+      <div class="text-xs">
+        <p class="font-bold" style="color: var(--text-dark);">Canteen Manager</p>
+        <p class="text-[11px] mt-0.5" style="color: var(--text-muted);">Quick Menu Sync Mode</p>
+      </div>
+    </div>
+  </aside>
+
+  <!-- ========================================================================= -->
+  <!-- MAIN WORKSPACE                                                            -->
+  <!-- ========================================================================= -->
+  <main class="flex-1 flex flex-col min-w-0 overflow-y-auto">
+
+    <!-- Top Sticky Header -->
+    <header class="border-b px-4 md:px-8 py-5 sticky top-0 z-20"
+            style="background-color: var(--bg-page); border-color: var(--border-soft);">
+      <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+        <div>
+          <h2 class="text-2xl font-extrabold tracking-tight" style="color: var(--text-dark);">Menu Management</h2>
+          <p class="text-sm mt-0.5" style="color: var(--text-muted);">Manage canteen food items, daily stock counts, and live availability</p>
+        </div>
+
+        <!-- Add Item Button -->
+        <button type="button" 
+                onclick="openForm()" 
+                class="btn-primary inline-flex items-center justify-center gap-2 font-bold text-sm px-5 py-3.5 focus:outline-none">
+          <span class="text-lg leading-none font-extrabold">+</span>
+          <span>Add item</span>
+        </button>
+      </div>
+
+      <!-- Live Summary Chips Row -->
+      <div class="grid grid-cols-2 sm:grid-cols-4 gap-3 mt-5">
+        <!-- Total Items -->
+        <div class="border rounded-2xl p-3 flex items-center justify-between shadow-sm"
+             style="background-color: var(--bg-panel); border-color: var(--border-soft);">
+          <div>
+            <p class="text-xs font-bold uppercase tracking-wider" style="color: var(--text-muted);">Total items</p>
+            <p id="chipTotal" class="text-2xl font-extrabold mt-0.5" style="color: var(--text-dark);">0</p>
+          </div>
+          <span class="text-2xl">📋</span>
+        </div>
+
+        <!-- Available Items -->
+        <div class="border rounded-2xl p-3 flex items-center justify-between shadow-sm"
+             style="background-color: var(--success-bg); border-color: var(--success);">
+          <div>
+            <p class="text-xs font-bold uppercase tracking-wider" style="color: var(--success);">Available</p>
+            <p id="chipAvailable" class="text-2xl font-extrabold mt-0.5" style="color: var(--success);">0</p>
+          </div>
+          <span class="text-2xl">🟢</span>
+        </div>
+
+        <!-- Sold Out Items -->
+        <div class="border rounded-2xl p-3 flex items-center justify-between shadow-sm"
+             style="background-color: var(--danger-bg); border-color: var(--danger);">
+          <div>
+            <p class="text-xs font-bold uppercase tracking-wider" style="color: var(--danger);">Sold out</p>
+            <p id="chipSoldOut" class="text-2xl font-extrabold mt-0.5" style="color: var(--danger);">0</p>
+          </div>
+          <span class="text-2xl">🔴</span>
+        </div>
+
+        <!-- Hidden Items -->
+        <div class="border rounded-2xl p-3 flex items-center justify-between shadow-sm"
+             style="background-color: var(--neutral-bg); border-color: var(--border-soft);">
+          <div>
+            <p class="text-xs font-bold uppercase tracking-wider" style="color: var(--text-muted);">Hidden</p>
+            <p id="chipHidden" class="text-2xl font-extrabold mt-0.5" style="color: var(--text-dark);">0</p>
+          </div>
+          <span class="text-2xl">👁️‍🗨️</span>
+        </div>
+      </div>
+    </header>
+
+    <!-- Content Area: Toolbar + Grid -->
+    <div class="p-4 md:p-8 space-y-6">
+
+      <!-- TOOLBAR: Filters, Search, Sort & Bulk Actions -->
+      <section class="p-4 rounded-2xl border shadow-sm space-y-3.5"
+               style="background-color: var(--bg-panel); border-color: var(--border-soft);"
+               aria-label="Menu Filters and Actions">
+        <div class="grid grid-cols-1 md:grid-cols-12 gap-3 items-center">
+          
+          <!-- Search Box -->
+          <div class="md:col-span-4 relative">
+            <span class="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-base" style="color: var(--text-muted);">
+              🔍
+            </span>
+            <input type="text" 
+                   id="searchInput" 
+                   oninput="renderMenu()" 
+                   placeholder="Search items by name or tag..." 
+                   class="w-full rounded-xl pl-10 pr-9 py-2.5 text-sm transition"
+                   style="background-color: var(--bg-card); border: 1px solid var(--border-soft); color: var(--text-dark);" />
+            <button type="button" 
+                    id="clearSearchBtn" 
+                    onclick="clearSearch()" 
+                    class="hidden absolute inset-y-0 right-0 pr-3 flex items-center hover:opacity-75"
+                    style="color: var(--text-muted);"
+                    title="Clear search">
+              ✕
+            </button>
+          </div>
+
+          <!-- Category Filter -->
+          <div class="md:col-span-3">
+            <select id="categoryFilter" 
+                    onchange="renderMenu()" 
+                    class="w-full rounded-xl px-3.5 py-2.5 text-sm font-semibold transition"
+                    style="background-color: var(--bg-card); border: 1px solid var(--border-soft); color: var(--text-dark);">
+              <option value="All">All Categories</option>
+              <!-- Populated dynamically via JS -->
+            </select>
+          </div>
+
+          <!-- Status Filter -->
+          <div class="md:col-span-2">
+            <select id="statusFilter" 
+                    onchange="renderMenu()" 
+                    class="w-full rounded-xl px-3 py-2.5 text-sm font-semibold transition"
+                    style="background-color: var(--bg-card); border: 1px solid var(--border-soft); color: var(--text-dark);">
+              <option value="All">All Statuses</option>
+              <option value="Available">Available</option>
+              <option value="Sold out">Sold out</option>
+              <option value="Hidden">Hidden</option>
+            </select>
+          </div>
+
+          <!-- Sort Dropdown -->
+          <div class="md:col-span-3">
+            <select id="sortOption" 
+                    onchange="renderMenu()" 
+                    class="w-full rounded-xl px-3 py-2.5 text-sm font-semibold transition"
+                    style="background-color: var(--bg-card); border: 1px solid var(--border-soft); color: var(--text-dark);">
+              <option value="name_asc">Sort: Name (A to Z)</option>
+              <option value="price_asc">Sort: Price (Low to High)</option>
+              <option value="price_desc">Sort: Price (High to Low)</option>
+            </select>
+          </div>
+
+        </div>
+
+        <!-- Bulk Action Buttons Row -->
+        <div class="pt-2.5 border-t flex flex-wrap items-center justify-between gap-2.5"
+             style="border-color: var(--border-soft);">
+          <p id="resultsCount" class="text-xs font-bold" style="color: var(--text-muted);">
+            Showing all items
+          </p>
+
+          <div class="flex items-center gap-2">
+            <button type="button" 
+                    onclick="handleMakeAllAvailable()" 
+                    class="font-bold text-xs px-3.5 py-2 rounded-xl transition hover:opacity-90 active:scale-95 shadow-sm"
+                    style="background-color: var(--bg-card); color: var(--primary); border: 1px solid var(--border-soft);">
+              Make all available
+            </button>
+            <button type="button" 
+                    onclick="exportMenuJson()" 
+                    class="font-bold text-xs px-3.5 py-2 rounded-xl transition hover:opacity-90 active:scale-95 shadow-sm"
+                    style="background-color: var(--bg-card); color: var(--text-dark); border: 1px solid var(--border-soft);">
+              Export menu (JSON)
+            </button>
+          </div>
+        </div>
+      </section>
+
+      <!-- MENU CARDS GRID -->
+      <section id="menuGrid" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-5" aria-label="Menu Item Cards">
+        <!-- Rendered dynamically by renderMenu() -->
+      </section>
+
+      <!-- EMPTY STATE (Shown when no items match filters) -->
+      <section id="emptyState" class="hidden border border-dashed rounded-3xl p-12 text-center max-w-md mx-auto my-8 shadow-sm"
+               style="background-color: var(--bg-card); border-color: var(--border-soft);">
+        <div class="w-16 h-16 rounded-2xl flex items-center justify-center text-3xl mx-auto mb-4 shadow-sm"
+             style="background-color: var(--bg-notice); color: var(--primary);">
+          🍽️
+        </div>
+        <h3 class="text-lg font-bold" style="color: var(--text-dark);">No items found</h3>
+        <p class="text-sm mt-1" style="color: var(--text-muted);">
+          No food items match your search or selected filters. Try clearing your filters or create a new item.
+        </p>
+        <div class="mt-5 flex items-center justify-center gap-3">
+          <button type="button" 
+                  onclick="resetFilters()" 
+                  class="font-bold text-xs px-4 py-2.5 rounded-xl transition hover:opacity-85 shadow-sm"
+                  style="background-color: var(--bg-panel); color: var(--text-dark); border: 1px solid var(--border-soft);">
+            Clear filters
+          </button>
+          <button type="button" 
+                  onclick="openForm()" 
+                  class="btn-primary font-bold text-xs px-4 py-2.5 rounded-xl transition">
+            Add new item
+          </button>
+        </div>
+      </section>
+
+    </div>
+  </main>
+
+  <!-- ========================================================================= -->
+  <!-- ADD / EDIT ITEM MODAL (<dialog>)                                          -->
+  <!-- ========================================================================= -->
+  <dialog id="itemDialog" class="p-0 border-0 shadow-2xl w-full max-w-lg m-auto overflow-hidden"
+          style="background-color: var(--bg-card); border: 1px solid var(--border-soft); border-radius: 24px; box-shadow: 0 20px 45px rgba(47, 33, 24, 0.25);">
+    
+    <!-- Modal Header -->
+    <div class="px-6 py-4 border-b flex items-center justify-between"
+         style="background-color: var(--bg-panel); border-color: var(--border-soft);">
+      <div class="flex items-center gap-2.5">
+        <span class="w-8 h-8 rounded-xl flex items-center justify-center text-sm font-bold shadow-sm"
+              style="background-color: var(--bg-notice); color: var(--primary);">
+          ✍️
+        </span>
+        <h3 id="modalTitle" class="text-lg font-extrabold" style="color: var(--text-dark);">Add Item</h3>
+      </div>
+      <button type="button" 
+              onclick="closeForm()" 
+              class="text-xl font-bold p-1 rounded-lg hover:opacity-75 focus:outline-none"
+              style="color: var(--text-muted);"
+              aria-label="Close dialog">
+        ✕
+      </button>
+    </div>
+
+    <!-- Modal Form -->
+    <form id="itemForm" onsubmit="handleFormSubmit(event)" class="p-6 space-y-4 max-h-[75vh] overflow-y-auto" novalidate>
+      <input type="hidden" id="itemId" />
+
+      <!-- Field: Name -->
+      <div>
+        <label for="itemName" class="block text-xs font-bold uppercase tracking-wider mb-1" style="color: var(--text-muted);">
+          Item Name <span style="color: var(--danger);">*</span>
+        </label>
+        <input type="text" 
+               id="itemName" 
+               placeholder="e.g. Masala Dosa" 
+               class="w-full rounded-xl px-3.5 py-2.5 text-sm transition"
+               style="background-color: var(--bg-card); border: 1px solid var(--border-soft); color: var(--text-dark);" />
+        <p id="errItemName" class="hidden text-xs font-bold mt-1" style="color: var(--danger);">Item name is required (minimum 2 characters).</p>
+      </div>
+
+      <!-- Grid: Category & Price -->
+      <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+        
+        <!-- Field: Category -->
+        <div>
+          <label for="itemCategory" class="block text-xs font-bold uppercase tracking-wider mb-1" style="color: var(--text-muted);">
+            Category <span style="color: var(--danger);">*</span>
+          </label>
+          <select id="itemCategory" 
+                  onchange="checkCustomCategory(this.value)" 
+                  class="w-full rounded-xl px-3.5 py-2.5 text-sm transition font-medium"
+                  style="background-color: var(--bg-card); border: 1px solid var(--border-soft); color: var(--text-dark);">
+            <!-- Populated dynamically -->
+          </select>
+          <!-- Optional New Category Text Input -->
+          <div id="newCategoryGroup" class="hidden mt-2">
+            <input type="text" 
+                   id="newCategoryInput" 
+                   placeholder="Enter new category name" 
+                   class="w-full rounded-xl px-3 py-2 text-xs transition"
+                   style="background-color: var(--bg-notice); border: 1px solid var(--border-notice); color: var(--text-dark);" />
+            <p id="errNewCategory" class="hidden text-xs font-bold mt-1" style="color: var(--danger);">Please enter a category name.</p>
+          </div>
+        </div>
+
+        <!-- Field: Price -->
+        <div>
+          <label for="itemPrice" class="block text-xs font-bold uppercase tracking-wider mb-1" style="color: var(--text-muted);">
+            Price (₹) <span style="color: var(--danger);">*</span>
+          </label>
+          <div class="relative">
+            <span class="absolute inset-y-0 left-0 pl-3 flex items-center font-bold text-sm" style="color: var(--text-muted);">₹</span>
+            <input type="number" 
+                   id="itemPrice" 
+                   min="1" 
+                   step="1" 
+                   placeholder="40" 
+                   class="w-full rounded-xl pl-8 pr-3.5 py-2.5 text-sm transition font-semibold"
+                   style="background-color: var(--bg-card); border: 1px solid var(--border-soft); color: var(--text-dark);" />
+          </div>
+          <p id="errItemPrice" class="hidden text-xs font-bold mt-1" style="color: var(--danger);">Price must be greater than 0.</p>
+        </div>
+
+      </div>
+
+      <!-- Grid: Preparation Time & Food Type (Veg / Non-veg) -->
+      <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+        
+        <!-- Field: Preparation Time -->
+        <div>
+          <label for="itemPrepTime" class="block text-xs font-bold uppercase tracking-wider mb-1" style="color: var(--text-muted);">
+            Prep Time (mins)
+          </label>
+          <input type="number" 
+                 id="itemPrepTime" 
+                 min="1" 
+                 placeholder="10" 
+                 class="w-full rounded-xl px-3.5 py-2.5 text-sm transition"
+                 style="background-color: var(--bg-card); border: 1px solid var(--border-soft); color: var(--text-dark);" />
+        </div>
+
+        <!-- Field: Food Type -->
+        <div>
+          <label class="block text-xs font-bold uppercase tracking-wider mb-1" style="color: var(--text-muted);">
+            Food Type <span style="color: var(--danger);">*</span>
+          </label>
+          <div class="grid grid-cols-2 gap-2 mt-1">
+            <label class="flex items-center gap-2 p-2 rounded-xl cursor-pointer transition hover:opacity-90"
+                   style="background-color: var(--bg-card); border: 1px solid var(--border-soft);">
+              <input type="radio" name="foodType" value="veg" checked class="w-4 h-4 cursor-pointer" style="accent-color: var(--success);" />
+              <span class="text-xs font-bold flex items-center gap-1.5" style="color: var(--success);">
+                <span class="w-2.5 h-2.5 rounded-full" style="background-color: var(--success);"></span> Veg
+              </span>
+            </label>
+            <label class="flex items-center gap-2 p-2 rounded-xl cursor-pointer transition hover:opacity-90"
+                   style="background-color: var(--bg-card); border: 1px solid var(--border-soft);">
+              <input type="radio" name="foodType" value="nonveg" class="w-4 h-4 cursor-pointer" style="accent-color: var(--danger);" />
+              <span class="text-xs font-bold flex items-center gap-1.5" style="color: var(--danger);">
+                <span class="w-2.5 h-2.5 rounded-full" style="background-color: var(--danger);"></span> Non-Veg
+              </span>
+            </label>
+          </div>
+        </div>
+
+      </div>
+
+      <!-- Field: Image (Local path or URL) -->
+      <div>
+        <label for="itemImageUrl" class="block text-xs font-bold uppercase tracking-wider mb-1" style="color: var(--text-muted);">
+          Image (Local path or URL)
+        </label>
+        <input type="text" 
+               id="itemImageUrl" 
+               placeholder="images/samosa.jpg or images/kandepohe.jpg" 
+               class="w-full rounded-xl px-3.5 py-2.5 text-sm transition"
+               style="background-color: var(--bg-card); border: 1px solid var(--border-soft); color: var(--text-dark);" />
+        <p class="text-[11px] mt-1" style="color: var(--text-muted);">Local file path (e.g. images/samosa.jpg) or web link. If blank, category emoji will be displayed.</p>
+      </div>
+
+      <!-- Field: Short Description -->
+      <div>
+        <label for="itemDescription" class="block text-xs font-bold uppercase tracking-wider mb-1" style="color: var(--text-muted);">
+          Short Description (optional)
+        </label>
+        <textarea id="itemDescription" 
+                  rows="2" 
+                  placeholder="Crispy, fresh, served with mint chutney..." 
+                  class="w-full rounded-xl px-3.5 py-2 text-sm transition"
+                  style="background-color: var(--bg-card); border: 1px solid var(--border-soft); color: var(--text-dark);"></textarea>
+      </div>
+
+      <!-- Field: Tags (Checkboxes) -->
+      <div>
+        <label class="block text-xs font-bold uppercase tracking-wider mb-1.5" style="color: var(--text-muted);">
+          Special Tags
+        </label>
+        <div class="flex flex-wrap gap-2">
+          <label class="flex items-center gap-1.5 text-xs font-semibold px-3 py-1.5 rounded-xl cursor-pointer hover:opacity-90 transition shadow-sm"
+                 style="background-color: var(--bg-card); border: 1px solid var(--border-soft); color: var(--text-dark);">
+            <input type="checkbox" name="itemTag" value="Bestseller" class="rounded" style="accent-color: var(--primary);" />
+            <span>🔥 Bestseller</span>
+          </label>
+          <label class="flex items-center gap-1.5 text-xs font-semibold px-3 py-1.5 rounded-xl cursor-pointer hover:opacity-90 transition shadow-sm"
+                 style="background-color: var(--bg-card); border: 1px solid var(--border-soft); color: var(--text-dark);">
+            <input type="checkbox" name="itemTag" value="Spicy" class="rounded" style="accent-color: var(--primary);" />
+            <span>🌶️ Spicy</span>
+          </label>
+          <label class="flex items-center gap-1.5 text-xs font-semibold px-3 py-1.5 rounded-xl cursor-pointer hover:opacity-90 transition shadow-sm"
+                 style="background-color: var(--bg-card); border: 1px solid var(--border-soft); color: var(--text-dark);">
+            <input type="checkbox" name="itemTag" value="Special" class="rounded" style="accent-color: var(--primary);" />
+            <span>⭐ Special</span>
+          </label>
+          <label class="flex items-center gap-1.5 text-xs font-semibold px-3 py-1.5 rounded-xl cursor-pointer hover:opacity-90 transition shadow-sm"
+                 style="background-color: var(--bg-card); border: 1px solid var(--border-soft); color: var(--text-dark);">
+            <input type="checkbox" name="itemTag" value="New" class="rounded" style="accent-color: var(--primary);" />
+            <span>✨ New</span>
+          </label>
+          <label class="flex items-center gap-1.5 text-xs font-semibold px-3 py-1.5 rounded-xl cursor-pointer hover:opacity-90 transition shadow-sm"
+                 style="background-color: var(--bg-card); border: 1px solid var(--border-soft); color: var(--text-dark);">
+            <input type="checkbox" name="itemTag" value="Healthy" class="rounded" style="accent-color: var(--primary);" />
+            <span>🥗 Healthy</span>
+          </label>
+        </div>
+      </div>
+
+      <!-- Field: Daily Stock Count -->
+      <div>
+        <label for="itemStock" class="block text-xs font-bold uppercase tracking-wider mb-1" style="color: var(--text-muted);">
+          Daily Stock Quantity (optional)
+        </label>
+        <input type="number" 
+               id="itemStock" 
+               min="0" 
+               placeholder="Leave empty for unlimited stock" 
+               class="w-full rounded-xl px-3.5 py-2.5 text-sm transition"
+               style="background-color: var(--bg-card); border: 1px solid var(--border-soft); color: var(--text-dark);" />
+        <p class="text-[11px] mt-1" style="color: var(--text-muted);">Item automatically turns "Sold out" when stock reaches 0.</p>
+      </div>
+
+      <!-- Switches: Available Now & Show to Students -->
+      <div class="p-3.5 rounded-2xl border space-y-3"
+           style="background-color: var(--bg-panel); border-color: var(--border-soft);">
+        <!-- Switch 1: Available Now -->
+        <label class="flex items-center justify-between cursor-pointer select-none">
+          <div>
+            <p class="text-xs font-bold" style="color: var(--text-dark);">Available now</p>
+            <p class="text-[11px]" style="color: var(--text-muted);">Allows students to order this item right now</p>
+          </div>
+          <input type="checkbox" id="itemAvailable" checked class="w-5 h-5 rounded cursor-pointer" style="accent-color: var(--primary);" />
+        </label>
+
+        <hr style="border-color: var(--border-soft);" />
+
+        <!-- Switch 2: Show to Students -->
+        <label class="flex items-center justify-between cursor-pointer select-none">
+          <div>
+            <p class="text-xs font-bold" style="color: var(--text-dark);">Show to students</p>
+            <p class="text-[11px]" style="color: var(--text-muted);">Uncheck to completely hide this item from the student menu</p>
+          </div>
+          <input type="checkbox" id="itemVisible" checked class="w-5 h-5 rounded cursor-pointer" style="accent-color: var(--primary);" />
+        </label>
+      </div>
+
+      <!-- Modal Footer Action Buttons -->
+      <div class="pt-4 border-t flex items-center justify-end gap-3" style="border-color: var(--border-soft);">
+        <button type="button" 
+                onclick="closeForm()" 
+                class="font-bold text-sm px-4 py-2.5 rounded-xl transition hover:opacity-85 shadow-sm"
+                style="background-color: var(--bg-panel); color: var(--text-muted); border: 1px solid var(--border-soft);">
+          Cancel
+        </button>
+        <button type="submit" 
+                class="btn-primary font-bold text-sm px-5 py-2.5 shadow-md">
+          Save item
+        </button>
+      </div>
+
+    </form>
+  </dialog>
+
+  <!-- ========================================================================= -->
+  <!-- FLOATING TOAST NOTIFICATION CONTAINER                                     -->
+  <!-- ========================================================================= -->
+  <div id="toastContainer" class="fixed bottom-5 right-5 z-50 flex flex-col gap-2 pointer-events-none" aria-live="polite"></div>
+
+  <!-- ========================================================================= -->
+  <!-- JAVASCRIPT LOGIC (Unchanged Data Keys & Logic)                            -->
+  <!-- ========================================================================= -->
+  <script>
+    // -------------------------------------------------------------------------
+    // CONSTANTS & STATE
+    // -------------------------------------------------------------------------
+
+    // Category emoji mapping for smart fallbacks
+    const CATEGORY_EMOJIS = {
+      'Snacks': '🥟',
+      'Meals': '🍛',
+      'Beverages': '🥤',
+      'South Indian': '🥞',
+      'Quick Bites': '🥪',
+      'Desserts': '🍩',
+      'Breakfast': '☕'
+    };
+
+    // Global in-memory menu state
+    let menuItems = [];
+    let categories = [];
+
+    // -------------------------------------------------------------------------
+    // 1. DATA ACCESS (storage.js integration)
+    // -------------------------------------------------------------------------
+
+    /**
+     * Loads menu and categories from storage.js asynchronously.
+     */
+    async function loadMenu() {
+      try {
+        categories = await getCategories();
+        menuItems = await getMenu();
+        populateCategoryDropdowns();
+        renderMenu();
+      } catch (err) {
+        console.error('Error loading menu:', err);
+        showToast('Failed to load menu data', 'error');
+      }
+    }
+
+    // -------------------------------------------------------------------------
+    // 2. UI RENDERING & SUMMARY CHIPS
+    // -------------------------------------------------------------------------
+
+    /**
+     * Updates the 4 summary chips at the top of the page
+     */
+    function updateSummaryChips() {
+      const total = menuItems.length;
+      let available = 0;
+      let soldOut = 0;
+      let hidden = 0;
+
+      menuItems.forEach(item => {
+        if (!item.isVisible) {
+          hidden++;
+        } else if (!item.isAvailable || item.stock === 0) {
+          soldOut++;
+        } else {
+          available++;
+        }
+      });
+
+      document.getElementById('chipTotal').textContent = total;
+      document.getElementById('chipAvailable').textContent = available;
+      document.getElementById('chipSoldOut').textContent = soldOut;
+      document.getElementById('chipHidden').textContent = hidden;
+    }
+
+    /**
+     * Populates category filter on the toolbar and category dropdown in the modal
+     */
+    function populateCategoryDropdowns() {
+      // Toolbar filter
+      const filterSelect = document.getElementById('categoryFilter');
+      const currentFilter = filterSelect.value || 'All';
+      filterSelect.innerHTML = '<option value="All">All Categories</option>';
+      categories.forEach(cat => {
+        const opt = document.createElement('option');
+        opt.value = cat;
+        opt.textContent = cat;
+        filterSelect.appendChild(opt);
+      });
+      filterSelect.value = currentFilter;
+
+      // Modal select
+      const formSelect = document.getElementById('itemCategory');
+      formSelect.innerHTML = '';
+      categories.forEach(cat => {
+        const opt = document.createElement('option');
+        opt.value = cat;
+        opt.textContent = cat;
+        formSelect.appendChild(opt);
+      });
+      // Option to add a new category
+      const newOpt = document.createElement('option');
+      newOpt.value = '__add_new__';
+      newOpt.textContent = '➕ Add new category...';
+      formSelect.appendChild(newOpt);
+    }
+
+    /**
+     * Filters, sorts and renders the menu item cards
+     */
+    function renderMenu() {
+      updateSummaryChips();
+
+      const searchVal = document.getElementById('searchInput').value.trim().toLowerCase();
+      const categoryVal = document.getElementById('categoryFilter').value;
+      const statusVal = document.getElementById('statusFilter').value;
+      const sortVal = document.getElementById('sortOption').value;
+
+      // Toggle clear search button
+      const clearBtn = document.getElementById('clearSearchBtn');
+      if (searchVal) {
+        clearBtn.classList.remove('hidden');
+      } else {
+        clearBtn.classList.add('hidden');
+      }
+
+      // Step 1: Filter
+      let filtered = menuItems.filter(item => {
+        // Search text matching name, description or tags
+        if (searchVal) {
+          const matchName = item.name.toLowerCase().includes(searchVal);
+          const matchDesc = (item.description || '').toLowerCase().includes(searchVal);
+          const matchTags = (item.tags || []).some(t => t.toLowerCase().includes(searchVal));
+          if (!matchName && !matchDesc && !matchTags) return false;
+        }
+
+        // Category filter
+        if (categoryVal !== 'All' && item.category !== categoryVal) {
+          return false;
+        }
+
+        // Status filter
+        const isHidden = !item.isVisible;
+        const isSoldOut = !isHidden && (!item.isAvailable || item.stock === 0);
+        const isAvailable = !isHidden && item.isAvailable && (item.stock === null || item.stock === undefined || item.stock > 0);
+
+        if (statusVal === 'Available' && !isAvailable) return false;
+        if (statusVal === 'Sold out' && !isSoldOut) return false;
+        if (statusVal === 'Hidden' && !isHidden) return false;
+
+        return true;
+      });
+
+      // Step 2: Sort
+      filtered.sort((a, b) => {
+        if (sortVal === 'name_asc') {
+          return a.name.localeCompare(b.name);
+        } else if (sortVal === 'price_asc') {
+          return a.price - b.price;
+        } else if (sortVal === 'price_desc') {
+          return b.price - a.price;
+        }
+        return 0;
+      });
+
+      // Step 3: Render
+      const grid = document.getElementById('menuGrid');
+      const emptyState = document.getElementById('emptyState');
+      const countEl = document.getElementById('resultsCount');
+
+      countEl.textContent = `Showing ${filtered.length} of ${menuItems.length} items`;
+
+      if (filtered.length === 0) {
+        grid.innerHTML = '';
+        emptyState.classList.remove('hidden');
+        return;
+      }
+
+      emptyState.classList.add('hidden');
+
+      grid.innerHTML = filtered.map(item => {
+        // Determine item effective status
+        const isHidden = !item.isVisible;
+        const isSoldOut = !isHidden && (!item.isAvailable || item.stock === 0);
+        const isAvailable = !isHidden && !isSoldOut;
+
+        let statusBadgeHtml = '';
+        if (isHidden) {
+          statusBadgeHtml = `<span style="background-color: var(--neutral-bg); color: var(--text-muted); border: 1px solid var(--border-soft);" class="text-[11px] font-bold px-2.5 py-0.5 rounded-full shadow-sm">Hidden</span>`;
+        } else if (isSoldOut) {
+          statusBadgeHtml = `<span style="background-color: var(--danger-bg); color: var(--danger); border: 1px solid var(--danger);" class="text-[11px] font-bold px-2.5 py-0.5 rounded-full shadow-sm">Sold out</span>`;
+        } else {
+          statusBadgeHtml = `<span style="background-color: var(--success-bg); color: var(--success); border: 1px solid var(--success);" class="text-[11px] font-bold px-2.5 py-0.5 rounded-full shadow-sm">Available</span>`;
+        }
+
+        // Tags pills HTML
+        const tagsHtml = (item.tags || []).map(tag => {
+          let tagStyle = 'background-color: var(--bg-notice); color: var(--text-dark); border: 1px solid var(--border-notice);';
+          if (tag === 'Bestseller' || tag === 'Special') {
+            tagStyle = 'background-color: var(--accent); color: #FFFFFF; font-weight: 800;';
+          } else if (tag === 'Spicy') {
+            tagStyle = 'background-color: var(--danger-bg); color: var(--danger); border: 1px solid var(--danger);';
+          } else if (tag === 'Healthy') {
+            tagStyle = 'background-color: var(--success-bg); color: var(--success); border: 1px solid var(--success);';
+          } else if (tag === 'New') {
+            tagStyle = 'background-color: var(--bg-notice); color: var(--primary); border: 1px solid var(--border-notice); font-weight: 700;';
+          }
+          return `<span style="${tagStyle}" class="text-[10px] px-2 py-0.5 rounded-md shadow-xs">${tag}</span>`;
+        }).join(' ');
+
+        // Fallback emoji
+        const fallbackEmoji = CATEGORY_EMOJIS[item.category] || '🍽️';
+
+        // Daily stock badge or buttons
+        let stockSectionHtml = '';
+        if (item.stock !== null && item.stock !== undefined && item.stock !== '') {
+          stockSectionHtml = `
+            <div style="background-color: var(--bg-panel); border: 1px solid var(--border-soft);" class="flex items-center justify-between text-xs rounded-xl px-2.5 py-1.5 mt-2.5 shadow-xs">
+              <span style="color: var(--text-muted);" class="font-medium">Daily Stock:</span>
+              <div class="flex items-center gap-2">
+                <button type="button" 
+                        onclick="updateStock('${item.id}', -1)" 
+                        style="background-color: var(--bg-card); border: 1px solid var(--border-soft); color: var(--text-dark);"
+                        class="w-6 h-6 rounded-lg font-bold hover:opacity-80 active:scale-95 flex items-center justify-center transition shadow-xs"
+                        title="Reduce stock by 1">
+                  -
+                </button>
+                <span style="color: ${item.stock === 0 ? 'var(--danger)' : 'var(--text-dark)'};" class="font-extrabold text-sm">${item.stock}</span>
+                <button type="button" 
+                        onclick="updateStock('${item.id}', 1)" 
+                        style="background-color: var(--bg-card); border: 1px solid var(--border-soft); color: var(--text-dark);"
+                        class="w-6 h-6 rounded-lg font-bold hover:opacity-80 active:scale-95 flex items-center justify-center transition shadow-xs"
+                        title="Increase stock by 1">
+                  +
+                </button>
+              </div>
+            </div>
+          `;
+        } else {
+          stockSectionHtml = `
+            <div style="background-color: var(--bg-panel); border: 1px solid var(--border-soft);" class="flex items-center justify-between text-xs rounded-xl px-2.5 py-1.5 mt-2.5">
+              <span style="color: var(--text-muted);" class="font-medium">Daily Stock:</span>
+              <span style="color: var(--text-muted);" class="text-xs font-semibold">Unlimited</span>
+            </div>
+          `;
+        }
+
+        return `
+          <article style="background-color: var(--bg-card); border: 1px solid var(--border-soft); border-radius: 16px; box-shadow: 0 4px 20px -2px rgba(47, 33, 24, 0.06);"
+                   class="overflow-hidden transition-all flex flex-col justify-between relative hover:shadow-md ${isSoldOut ? 'opacity-85' : ''}">
+            
+            <!-- Image & Header Container -->
+            <div class="relative h-44 w-full overflow-hidden flex items-center justify-center"
+                 style="background-color: var(--bg-panel);">
+              
+              <!-- Food Image (or emoji fallback) -->
+              ${(item.imageUrl || item.image) ? `
+                <img src="${item.imageUrl || item.image}" 
+                     alt="${item.name}" 
+                     class="w-full h-full object-cover" 
+                     onerror="this.onerror=null; this.classList.add('hidden'); this.nextElementSibling.classList.remove('hidden');" />
+                <div class="hidden text-6xl select-none">${fallbackEmoji}</div>
+              ` : `
+                <div class="text-6xl select-none">${fallbackEmoji}</div>
+              `}
+
+              <!-- Top Left: Veg / Non-Veg Indicator Dot (FSSAI standard) -->
+              <div class="absolute top-2.5 left-2.5 bg-white/95 backdrop-blur-sm p-1 rounded-lg shadow-sm"
+                   style="border: 1px solid var(--border-soft);" 
+                   title="${item.isVeg ? 'Vegetarian' : 'Non-Vegetarian'}">
+                <div class="w-4 h-4 border-2 flex items-center justify-center rounded-[3px]"
+                     style="border-color: ${item.isVeg ? 'var(--success)' : 'var(--danger)'};">
+                  <div class="w-2 h-2 rounded-full" 
+                       style="background-color: ${item.isVeg ? 'var(--success)' : 'var(--danger)'};"></div>
+                </div>
+              </div>
+
+              <!-- Top Right: Status Badge -->
+              <div class="absolute top-2.5 right-2.5">
+                ${statusBadgeHtml}
+              </div>
+
+              <!-- SOLD OUT Big Overlay Banner -->
+              ${isSoldOut ? `
+                <div class="absolute inset-0 bg-black/40 backdrop-blur-[1px] flex items-center justify-center">
+                  <span style="background-color: var(--danger); color: #FFFFFF; border: 2px solid #FFFFFF; border-radius: 12px;"
+                        class="font-extrabold text-sm tracking-widest px-4 py-1.5 uppercase shadow-xl transform -rotate-3">
+                    SOLD OUT
+                  </span>
+                </div>
+              ` : ''}
+            </div>
+
+            <!-- Card Content Body -->
+            <div class="p-4 flex-1 flex flex-col justify-between">
+              <div>
+                <!-- Category & Prep Time -->
+                <div class="flex items-center justify-between text-[11px] font-semibold uppercase tracking-wider mb-1"
+                     style="color: var(--text-muted);">
+                  <span>${item.category}</span>
+                  <span class="flex items-center gap-1 font-medium lowercase">
+                    ⏱️ ${item.prepTime || 10}m
+                  </span>
+                </div>
+
+                <!-- Item Name -->
+                <h3 class="font-bold text-base leading-snug line-clamp-1" 
+                    style="color: var(--text-dark);" 
+                    title="${item.name}">
+                  ${item.name}
+                </h3>
+
+                <!-- Price -->
+                <div class="mt-1 flex items-baseline gap-1">
+                  <span class="text-xl font-extrabold" style="color: var(--text-dark);">₹${item.price}</span>
+                </div>
+
+                <!-- Description (if any) -->
+                ${item.description ? `
+                  <p class="text-xs mt-1 line-clamp-2 leading-relaxed" style="color: var(--text-muted);">
+                    ${item.description}
+                  </p>
+                ` : ''}
+
+                <!-- Tags Row -->
+                <div class="flex flex-wrap gap-1.5 mt-2.5">
+                  ${tagsHtml}
+                </div>
+
+                <!-- Daily Stock Counter -->
+                ${stockSectionHtml}
+              </div>
+
+              <!-- Bottom Action Bar -->
+              <div class="mt-4 pt-3 border-t flex items-center justify-between gap-2"
+                   style="border-color: var(--border-soft);">
+                
+                <!-- Quick Availability Toggle Switch -->
+                <label class="flex items-center gap-2 cursor-pointer select-none" title="Toggle item availability">
+                  <input type="checkbox" 
+                         ${item.isAvailable && (!item.stock || item.stock > 0) ? 'checked' : ''} 
+                         onchange="toggleAvailability('${item.id}', this.checked)" 
+                         class="w-4 h-4 rounded cursor-pointer"
+                         style="accent-color: var(--primary);" />
+                  <span class="text-xs font-bold" 
+                        style="color: ${item.isAvailable && (!item.stock || item.stock > 0) ? 'var(--text-dark)' : 'var(--text-muted)'};">
+                    ${item.isAvailable && (!item.stock || item.stock > 0) ? 'Available' : 'Sold out'}
+                  </span>
+                </label>
+
+                <!-- Edit and Delete Buttons (Plain English Words) -->
+                <div class="flex items-center gap-1.5">
+                  <button type="button" 
+                          onclick="openForm('${item.id}')" 
+                          class="font-bold text-xs px-3 py-1.5 transition hover:opacity-85 shadow-xs"
+                          style="background-color: var(--bg-panel); color: var(--text-dark); border-radius: 10px; border: 1px solid var(--border-soft);">
+                    Edit
+                  </button>
+                  <button type="button" 
+                          onclick="deleteItem('${item.id}')" 
+                          class="font-bold text-xs px-3 py-1.5 transition hover:opacity-85 shadow-xs"
+                          style="background-color: var(--danger-bg); color: var(--danger); border-radius: 10px; border: 1px solid var(--danger);">
+                    Delete
+                  </button>
+                </div>
+
+              </div>
+
+            </div>
+          </article>
+        `;
+      }).join('');
+    }
+
+    // -------------------------------------------------------------------------
+    // 3. MENU ACTIONS (Toggle, Stock, Delete, Bulk Actions)
+    // -------------------------------------------------------------------------
+
+    /**
+     * Toggles item available / sold out in one click.
+     * Prevents enabling if daily stock is 0.
+     */
+    async function toggleAvailability(id, desiredStatus) {
+      const item = menuItems.find(i => i.id === id);
+      if (!item) return;
+
+      try {
+        const updated = await setAvailability(id, desiredStatus);
+        const idx = menuItems.findIndex(i => i.id === id);
+        if (idx !== -1) {
+          menuItems[idx] = updated;
+        }
+        renderMenu();
+
+        if (desiredStatus) {
+          showToast(`"${item.name}" marked as Available`, 'success');
+        } else {
+          showToast(`"${item.name}" marked as Sold Out`, 'info');
+        }
+      } catch (err) {
+        showToast(err.message || 'Error updating availability', 'warning');
+        renderMenu(); // Re-render to reset the checkbox UI
+      }
+    }
+
+    /**
+     * Updates daily stock count.
+     * When stock reaches 0, the item automatically becomes Sold out.
+     */
+    async function updateStock(id, delta) {
+      const item = menuItems.find(i => i.id === id);
+      if (!item) return;
+
+      try {
+        const updated = await updateItemStock(id, delta);
+        const idx = menuItems.findIndex(i => i.id === id);
+        if (idx !== -1) {
+          menuItems[idx] = updated;
+        }
+        renderMenu();
+
+        // Automatically become "Sold out" if stock reaches 0
+        if (updated.stock === 0 && !updated.isAvailable) {
+          showToast(`"${updated.name}" stock reached 0 and is now Sold Out!`, 'warning');
+        } else {
+          showToast(`"${updated.name}" stock updated to ${updated.stock}`, 'info');
+        }
+      } catch (err) {
+        showToast(err.message || 'Error updating stock', 'error');
+      }
+    }
+
+    /**
+     * Deletes an item with confirmation prompt
+     */
+    async function deleteItem(id) {
+      const item = menuItems.find(i => i.id === id);
+      if (!item) return;
+
+      const confirmed = window.confirm(`Are you sure you want to delete "${item.name}" from the menu?`);
+      if (!confirmed) return;
+
+      try {
+        await deleteMenuItem(id);
+        menuItems = menuItems.filter(i => i.id !== id);
+        renderMenu();
+        showToast(`Item "${item.name}" deleted`, 'info');
+      } catch (err) {
+        showToast(err.message || 'Error deleting item', 'error');
+      }
+    }
+
+    /**
+     * Bulk action: Marks all non-hidden items as available
+     */
+    async function handleMakeAllAvailable() {
+      try {
+        menuItems = await makeAllAvailable();
+        renderMenu();
+        const count = menuItems.filter(i => i.isVisible !== false && i.visible !== false).length;
+        showToast(`Marked ${count} items as Available`, 'success');
+      } catch (err) {
+        showToast(err.message || 'Failed to update items', 'error');
+      }
+    }
+
+    /**
+     * Exports the entire menu array as a downloadable JSON file
+     */
+    function exportMenuJson() {
+      const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(menuItems, null, 2));
+      const downloadAnchor = document.createElement('a');
+      downloadAnchor.setAttribute("href", dataStr);
+      downloadAnchor.setAttribute("download", `queuebite_menu_${new Date().toISOString().slice(0, 10)}.json`);
+      document.body.appendChild(downloadAnchor);
+      downloadAnchor.click();
+      downloadAnchor.remove();
+      showToast('Menu exported as JSON file', 'success');
+    }
+
+    /**
+     * Clears all filters back to defaults
+     */
+    function resetFilters() {
+      document.getElementById('searchInput').value = '';
+      document.getElementById('categoryFilter').value = 'All';
+      document.getElementById('statusFilter').value = 'All';
+      document.getElementById('sortOption').value = 'name_asc';
+      renderMenu();
+    }
+
+    function clearSearch() {
+      document.getElementById('searchInput').value = '';
+      renderMenu();
+    }
+
+    // -------------------------------------------------------------------------
+    // 4. ADD / EDIT MODAL FORM HANDLING (<dialog>)
+    // -------------------------------------------------------------------------
+
+    /**
+     * Opens the <dialog> modal. If id is provided, populates fields for editing.
+     */
+    function openForm(id = null) {
+      clearFormErrors();
+      populateCategoryDropdowns();
+
+      const dialog = document.getElementById('itemDialog');
+      const form = document.getElementById('itemForm');
+      const titleEl = document.getElementById('modalTitle');
+      const newCatGroup = document.getElementById('newCategoryGroup');
+      newCatGroup.classList.add('hidden');
+      document.getElementById('newCategoryInput').value = '';
+
+      if (id) {
+        // EDIT MODE
+        const item = menuItems.find(i => i.id === id);
+        if (!item) return;
+
+        titleEl.textContent = 'Edit Item';
+        document.getElementById('itemId').value = item.id;
+        document.getElementById('itemName').value = item.name;
+        document.getElementById('itemCategory').value = item.category;
+        document.getElementById('itemPrice').value = item.price;
+        document.getElementById('itemPrepTime').value = item.prepTime || '';
+        document.getElementById('itemDescription').value = item.description || '';
+        document.getElementById('itemImageUrl').value = item.imageUrl || '';
+        document.getElementById('itemStock').value = (item.stock !== null && item.stock !== undefined) ? item.stock : '';
+        document.getElementById('itemAvailable').checked = Boolean(item.isAvailable);
+        document.getElementById('itemVisible').checked = item.isVisible !== false;
+
+        // Food type radio
+        const radios = document.getElementsByName('foodType');
+        for (let r of radios) {
+          r.checked = (r.value === (item.isVeg ? 'veg' : 'nonveg'));
+        }
+
+        // Tags checkboxes
+        const tagBoxes = document.getElementsByName('itemTag');
+        for (let box of tagBoxes) {
+          box.checked = (item.tags || []).includes(box.value);
+        }
+      } else {
+        // ADD NEW MODE
+        titleEl.textContent = 'Add Item';
+        form.reset();
+        document.getElementById('itemId').value = '';
+        document.getElementById('itemAvailable').checked = true;
+        document.getElementById('itemVisible').checked = true;
+        document.getElementById('itemPrepTime').value = '10';
+      }
+
+      dialog.showModal();
+    }
+
+    /**
+     * Closes the <dialog> modal
+     */
+    function closeForm() {
+      const dialog = document.getElementById('itemDialog');
+      dialog.close();
+      clearFormErrors();
+    }
+
+    /**
+     * Checks if the user selected "+ Add new category" in the dropdown
+     */
+    function checkCustomCategory(val) {
+      const newCatGroup = document.getElementById('newCategoryGroup');
+      if (val === '__add_new__') {
+        newCatGroup.classList.remove('hidden');
+        document.getElementById('newCategoryInput').focus();
+      } else {
+        newCatGroup.classList.add('hidden');
+      }
+    }
+
+    /**
+     * Clears error highlights next to form fields
+     */
+    function clearFormErrors() {
+      document.getElementById('errItemName').classList.add('hidden');
+      document.getElementById('errItemPrice').classList.add('hidden');
+      document.getElementById('errNewCategory').classList.add('hidden');
+    }
+
+    /**
+     * Validates and saves the form (Add or Edit)
+     */
+    async function handleFormSubmit(event) {
+      event.preventDefault();
+      clearFormErrors();
+
+      const id = document.getElementById('itemId').value.trim();
+      const name = document.getElementById('itemName').value.trim();
+      let category = document.getElementById('itemCategory').value;
+      const priceStr = document.getElementById('itemPrice').value.trim();
+      const prepTime = Number(document.getElementById('itemPrepTime').value) || 10;
+      const description = document.getElementById('itemDescription').value.trim();
+      const imageUrl = document.getElementById('itemImageUrl').value.trim();
+      const stockVal = document.getElementById('itemStock').value.trim();
+      const isAvailable = document.getElementById('itemAvailable').checked;
+      const isVisible = document.getElementById('itemVisible').checked;
+
+      // Food type
+      const foodTypeRadio = document.querySelector('input[name="foodType"]:checked');
+      const isVeg = foodTypeRadio ? foodTypeRadio.value === 'veg' : true;
+
+      // Selected Tags
+      const selectedTags = [];
+      document.querySelectorAll('input[name="itemTag"]:checked').forEach(cb => {
+        selectedTags.push(cb.value);
+      });
+
+      // Validation
+      let isValid = true;
+
+      if (!name || name.length < 2) {
+        document.getElementById('errItemName').classList.remove('hidden');
+        isValid = false;
+      }
+
+      const price = Number(priceStr);
+      if (isNaN(price) || price <= 0) {
+        document.getElementById('errItemPrice').classList.remove('hidden');
+        isValid = false;
+      }
+
+      // Handle new category creation
+      if (category === '__add_new__') {
+        const customCat = document.getElementById('newCategoryInput').value.trim();
+        if (!customCat) {
+          document.getElementById('errNewCategory').classList.remove('hidden');
+          isValid = false;
+        } else {
+          category = customCat;
+          if (!categories.includes(category)) {
+            categories.push(category);
+            await saveCategories(categories);
+          }
+        }
+      }
+
+      if (!isValid) return;
+
+      // Daily stock formatting (null if empty, integer otherwise)
+      const stock = stockVal === '' ? null : Math.max(0, parseInt(stockVal, 10));
+
+      const itemData = {
+        name,
+        category,
+        price,
+        prepTime,
+        description,
+        imageUrl,
+        isVeg,
+        tags: selectedTags,
+        stock,
+        isAvailable: stock === 0 ? false : isAvailable,
+        isVisible
+      };
+
+      if (id) {
+        itemData.id = id;
+      }
+
+      try {
+        const savedItem = await saveMenuItem(itemData);
+        if (id) {
+          const index = menuItems.findIndex(i => i.id === id);
+          if (index !== -1) {
+            menuItems[index] = savedItem;
+          }
+          showToast(`Item "${name}" updated`, 'success');
+        } else {
+          menuItems.unshift(savedItem);
+          showToast(`Item "${name}" added to menu`, 'success');
+        }
+
+        closeForm();
+        populateCategoryDropdowns();
+        renderMenu();
+      } catch (err) {
+        showToast(err.message || 'Error saving menu item', 'error');
+      }
+    }
+
+    // -------------------------------------------------------------------------
+    // 5. TOAST NOTIFICATION UTILITY (Cocoa & Cream Dark Toast)
+    // -------------------------------------------------------------------------
+    function showToast(message, type = 'info') {
+      const container = document.getElementById('toastContainer');
+      const toast = document.createElement('div');
+      
+      let icon = 'ℹ️';
+      let borderAccent = 'var(--primary)';
+
+      if (type === 'success') {
+        icon = '✅';
+        borderAccent = 'var(--success)';
+      } else if (type === 'warning') {
+        icon = '⚠️';
+        borderAccent = 'var(--accent)';
+      } else if (type === 'error') {
+        icon = '❌';
+        borderAccent = 'var(--danger)';
+      }
+
+      toast.className = `pointer-events-auto flex items-center gap-2.5 px-4 py-3 rounded-2xl shadow-xl text-xs font-bold transform transition-all duration-300 translate-y-3 opacity-0`;
+      toast.style.backgroundColor = 'var(--text-dark)';
+      toast.style.color = 'var(--bg-page)';
+      toast.style.border = '1px solid var(--border-soft)';
+      toast.style.borderLeft = `5px solid ${borderAccent}`;
+      toast.style.boxShadow = '0 10px 25px -3px rgba(47, 33, 24, 0.35)';
+      toast.innerHTML = `<span>${icon}</span> <span>${message}</span>`;
+
+      container.appendChild(toast);
+
+      // Animate in
+      requestAnimationFrame(() => {
+        toast.classList.remove('translate-y-3', 'opacity-0');
+      });
+
+      // Dismiss after 2.8s
+      setTimeout(() => {
+        toast.classList.add('opacity-0', 'translate-y-2');
+        setTimeout(() => toast.remove(), 300);
+      }, 2800);
+    }
+
+    // -------------------------------------------------------------------------
+    // 6. LOGOUT & AUTH GUARD
+    // -------------------------------------------------------------------------
+    async function handleLogout(event) {
+      if (event) event.preventDefault();
+      await logoutUser();
+      window.location.href = 'login.html';
+    }
+
+    // -------------------------------------------------------------------------
+    // 7. AUTO-REFRESH & CROSS-TAB SYNC
+    // -------------------------------------------------------------------------
+    let refreshInterval = null;
+
+    function startAutoRefresh() {
+      if (refreshInterval) clearInterval(refreshInterval);
+      refreshInterval = setInterval(async () => {
+        const dialog = document.getElementById('itemDialog');
+        if (!dialog || !dialog.open) {
+          await loadMenu();
+        }
+      }, 15000);
+    }
+
+    document.addEventListener('DOMContentLoaded', async () => {
+      // 1. Auth Guard: Admin access only
+      const session = await getSession();
+      if (!session || session.role !== 'admin') {
+        window.location.href = 'login.html';
+        return;
+      }
+
+      // 2. Initial load & auto-refresh
+      await loadMenu();
+      startAutoRefresh();
+
+      // 3. Storage event listener for cross-tab sync
+      window.addEventListener('storage', async (e) => {
+        const watchedKeys = [
+          typeof STORAGE_KEYS !== 'undefined' ? STORAGE_KEYS.MENU : 'cubite_menu',
+          typeof STORAGE_KEYS !== 'undefined' ? STORAGE_KEYS.CATEGORIES : 'cubite_categories'
+        ];
+        if (watchedKeys.includes(e.key)) {
+          const dialog = document.getElementById('itemDialog');
+          if (!dialog || !dialog.open) {
+            await loadMenu();
+          }
+        }
+      });
+
+      // 4. Tab visibility and focus synchronization
+      document.addEventListener('visibilitychange', async () => {
+        if (document.visibilityState === 'visible') {
+          const dialog = document.getElementById('itemDialog');
+          if (!dialog || !dialog.open) {
+            await loadMenu();
+          }
+        }
+      });
+
+      window.addEventListener('focus', async () => {
+        const dialog = document.getElementById('itemDialog');
+        if (!dialog || !dialog.open) {
+          await loadMenu();
+        }
+      });
+    });
+  </script>
+
+</body>
+</html>

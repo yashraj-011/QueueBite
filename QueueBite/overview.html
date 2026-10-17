@@ -1,0 +1,923 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>QueueBite Admin – Dashboard Overview</title>
+  <!-- Tailwind CSS via CDN for base utilities -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <!-- Storage Layer (QueueBite Data Storage) -->
+  <script src="storage.js"></script>
+  <!-- Plus Jakarta Sans Font (matching admin & login) -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+
+  <style>
+    /* ========================================================================= */
+    /* THEME: "Cocoa and Cream" (Exact palette from admin.html & login.html)     */
+    /* ========================================================================= */
+    :root {
+      --bg-page:        #FBF4E9;   /* main cream background */
+      --bg-panel:       #EFE3D3;   /* sidebar, filter bar, toggle tracks, chips */
+      --bg-card:        #FFFFFF;   /* cards, inputs, modal */
+      --bg-notice:      #FAE8D0;   /* info boxes, highlights, tag backgrounds */
+      --border-notice:  #F0C888;   /* border of info boxes */
+      --border-soft:    #E4D6C3;   /* normal card and input borders */
+      --text-dark:      #2F2118;   /* headings and main text */
+      --text-muted:     #6B5645;   /* labels, secondary text */
+      --text-placeholder: #B9AA9A; /* placeholder text */
+      --primary:        #8B5E3C;   /* main buttons, active sidebar item, focused input border */
+      --primary-hover:  #774D2F;   /* button hover */
+      --accent:         #E9A23B;   /* mustard: Bestseller / Special tags, small highlights */
+      --success:        #4F7A4A;   /* "Available" badge text and veg dot */
+      --success-bg:     #E3EFDC;
+      --danger:         #B3453A;   /* "Sold out" badge, delete button, non-veg dot */
+      --danger-bg:      #F7DEDA;
+      --neutral-bg:     #E4DDD3;   /* "Hidden" badge */
+    }
+
+    body {
+      font-family: 'Plus Jakarta Sans', sans-serif;
+      background-color: var(--bg-page);
+      color: var(--text-dark);
+    }
+
+    /* Primary buttons */
+    .btn-primary {
+      background-color: var(--primary);
+      color: #FFFFFF;
+      border-radius: 16px;
+      box-shadow: 0 6px 18px -2px rgba(139, 94, 60, 0.25);
+      transition: all 0.2s ease;
+    }
+    .btn-primary:hover {
+      background-color: var(--primary-hover);
+      box-shadow: 0 8px 22px -2px rgba(139, 94, 60, 0.35);
+    }
+    .btn-primary:active {
+      transform: scale(0.98);
+    }
+
+    /* Navigation item hover */
+    .nav-link:hover {
+      background-color: rgba(255, 255, 255, 0.6);
+      color: var(--text-dark);
+    }
+
+    /* Card styling */
+    .dashboard-card {
+      background-color: var(--bg-card);
+      border: 1px solid var(--border-soft);
+      border-radius: 16px;
+      box-shadow: 0 4px 20px -2px rgba(47, 33, 24, 0.05);
+      transition: all 0.2s ease;
+    }
+    .dashboard-card:hover {
+      box-shadow: 0 8px 26px -2px rgba(47, 33, 24, 0.09);
+    }
+
+    /* Custom scrollbars */
+    .no-scrollbar::-webkit-scrollbar {
+      display: none;
+    }
+    .no-scrollbar {
+      -ms-overflow-style: none;
+      scrollbar-width: none;
+    }
+  </style>
+</head>
+
+<body class="min-h-screen flex flex-col md:flex-row antialiased">
+
+  <!-- ========================================================================= -->
+  <!-- SIDEBAR NAVIGATION (Exact match to admin.html)                            -->
+  <!-- ========================================================================= -->
+  <aside class="w-full md:w-64 border-b md:border-b-0 md:border-r flex-shrink-0 z-30 flex flex-col"
+         style="background-color: var(--bg-panel); border-color: var(--border-soft);">
+    
+    <!-- Brand Header -->
+    <div class="p-4 md:p-6 border-b flex items-center justify-between" style="border-color: var(--border-soft);">
+      <div class="flex items-center gap-3">
+        <div class="w-10 h-10 rounded-2xl flex items-center justify-center text-white text-xl shadow-md"
+             style="background-color: var(--primary); box-shadow: 0 4px 14px rgba(139, 94, 60, 0.3);">
+          🍛
+        </div>
+        <div>
+          <h1 class="font-extrabold text-lg leading-tight" style="color: var(--text-dark);">QueueBite</h1>
+          <p class="text-xs font-bold" style="color: var(--primary);">Staff Admin Portal</p>
+        </div>
+      </div>
+      <span class="inline-flex md:hidden text-xs font-bold px-2.5 py-0.5 rounded-full"
+            style="background-color: var(--bg-notice); color: var(--text-dark); border: 1px solid var(--border-notice);">
+        Canteen
+      </span>
+    </div>
+
+    <!-- Navigation Links -->
+    <nav class="p-3 md:p-4 flex md:flex-col gap-1.5 overflow-x-auto no-scrollbar whitespace-nowrap md:overflow-visible">
+      <!-- Overview Link (ACTIVE: white pill with dark text) -->
+      <a href="overview.html" 
+         class="flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-sm font-bold shadow-sm transition"
+         style="background-color: var(--bg-card); color: var(--text-dark); box-shadow: 0 2px 8px rgba(47, 33, 24, 0.08);"
+         aria-current="page">
+        <span class="text-base">📊</span>
+        <span>Overview</span>
+      </a>
+
+      <!-- Orders Link -->
+      <a href="orders.html" 
+         class="nav-link flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-sm font-semibold transition"
+         style="color: var(--text-muted);">
+        <span class="text-base">🧾</span>
+        <span>Orders</span>
+      </a>
+
+      <!-- Queue Link -->
+      <a href="queue.html" 
+         class="nav-link flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-sm font-semibold transition"
+         style="color: var(--text-muted);">
+        <span class="text-base">⏱️</span>
+        <span>Queue</span>
+      </a>
+
+      <!-- Menu Link (Points to admin.html) -->
+      <a href="admin.html" 
+         class="nav-link flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-sm font-semibold transition"
+         style="color: var(--text-muted);">
+        <span class="text-base">🍽️</span>
+        <span>Menu</span>
+      </a>
+
+      <!-- Slots Link -->
+      <a href="slots.html" 
+         class="nav-link flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-sm font-semibold transition"
+         style="color: var(--text-muted);">
+        <span class="text-base">🕒</span>
+        <span>Slots</span>
+      </a>
+
+      <!-- Logout Link -->
+      <a href="login.html" 
+         onclick="handleLogout(event)"
+         class="flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-sm font-bold md:mt-auto transition hover:opacity-85"
+         style="color: var(--danger);">
+        <span class="text-base">🚪</span>
+        <span>Logout</span>
+      </a>
+    </nav>
+
+    <!-- Sidebar Footer -->
+    <div class="hidden md:block p-4 mt-auto border-t" style="background-color: var(--bg-notice); border-color: var(--border-soft);">
+      <div class="text-xs">
+        <p class="font-bold" style="color: var(--text-dark);">Canteen Manager</p>
+        <p class="text-[11px] mt-0.5" style="color: var(--text-muted);">Live Operational Dashboard</p>
+      </div>
+    </div>
+  </aside>
+
+  <!-- ========================================================================= -->
+  <!-- MAIN WORKSPACE                                                            -->
+  <!-- ========================================================================= -->
+  <main class="flex-1 flex flex-col min-w-0 overflow-y-auto">
+
+    <!-- Top Sticky Header -->
+    <header class="border-b px-4 md:px-8 py-5 sticky top-0 z-20"
+            style="background-color: var(--bg-page); border-color: var(--border-soft);">
+      <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+        <div>
+          <div class="flex items-center gap-2">
+            <h2 class="text-2xl font-extrabold tracking-tight" style="color: var(--text-dark);">Overview</h2>
+            <span id="currentDateBadge" class="text-xs font-bold px-2.5 py-0.5 rounded-full"
+                  style="background-color: var(--bg-panel); color: var(--text-muted); border: 1px solid var(--border-soft);">
+              Today
+            </span>
+          </div>
+          <p id="greetingText" class="text-sm mt-0.5 font-medium" style="color: var(--text-muted);">
+            Good afternoon, Admin
+          </p>
+        </div>
+
+        <!-- Canteen Open/Closed Switch -->
+        <div class="flex items-center gap-3 px-3.5 py-2.5 rounded-2xl border shadow-sm"
+             style="background-color: var(--bg-card); border-color: var(--border-soft);">
+          <div class="text-right">
+            <p id="canteenStatusLabel" class="text-xs font-black tracking-tight" style="color: var(--success);">
+              Canteen Open
+            </p>
+            <p id="canteenStatusSub" class="text-[11px] font-semibold" style="color: var(--text-muted);">Accepting orders</p>
+          </div>
+          <label class="relative inline-flex items-center cursor-pointer select-none">
+            <input type="checkbox" id="canteenToggle" onchange="toggleCanteenStatus(this.checked)" class="sr-only peer">
+            <div class="w-12 h-7 rounded-full transition-colors relative after:content-[''] after:absolute after:top-[3.5px] after:left-[4px] after:bg-white after:rounded-full after:h-5 after:w-5 after:transition-transform after:shadow-sm peer-checked:after:translate-x-5"
+                 style="background-color: var(--primary);"
+                 id="canteenToggleTrack"></div>
+          </label>
+        </div>
+      </div>
+
+      <!-- Closed Canteen Banner (Hidden by default) -->
+      <div id="canteenClosedBanner" class="hidden mt-4 p-3 rounded-2xl border flex items-center justify-between gap-3 text-xs font-bold shadow-sm"
+           style="background-color: var(--danger-bg); border-color: var(--danger); color: var(--danger);">
+        <div class="flex items-center gap-2">
+          <span class="text-base">⚠️</span>
+          <span>Canteen is closed. Students cannot place new orders right now.</span>
+        </div>
+        <button type="button" onclick="toggleCanteenStatus(true)" class="underline hover:opacity-80">
+          Open Now
+        </button>
+      </div>
+    </header>
+
+    <!-- Main Content Area -->
+    <div class="p-4 md:p-8 space-y-7">
+
+      <!-- ===================================================================== -->
+      <!-- 1. SUMMARY CARDS (6 Key Metrics)                                      -->
+      <!-- ===================================================================== -->
+      <section aria-label="Key Performance Indicators">
+        <div class="grid grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-3.5">
+          
+          <!-- Card 1: Total Orders Today -->
+          <a href="orders.html" class="dashboard-card p-4 flex flex-col justify-between group cursor-pointer">
+            <div class="flex items-center justify-between">
+              <span class="text-xs font-bold uppercase tracking-wider" style="color: var(--text-muted);">Total Orders</span>
+              <span class="text-xl">📋</span>
+            </div>
+            <div class="mt-3">
+              <span id="metricTotalOrders" class="text-3xl font-extrabold tracking-tight" style="color: var(--text-dark);">0</span>
+              <p class="text-[11px] font-medium mt-0.5 group-hover:underline" style="color: var(--primary);">View all &rarr;</p>
+            </div>
+          </a>
+
+          <!-- Card 2: Pending (Placed) -->
+          <a href="orders.html?status=Placed" class="dashboard-card p-4 flex flex-col justify-between group cursor-pointer"
+             style="border-left: 4px solid var(--accent);">
+            <div class="flex items-center justify-between">
+              <span class="text-xs font-bold uppercase tracking-wider" style="color: var(--text-muted);">Placed</span>
+              <span class="text-xl">⏳</span>
+            </div>
+            <div class="mt-3">
+              <span id="metricPlacedOrders" class="text-3xl font-extrabold tracking-tight" style="color: var(--text-dark);">0</span>
+              <p class="text-[11px] font-medium mt-0.5 group-hover:underline" style="color: var(--accent);">Pending queue</p>
+            </div>
+          </a>
+
+          <!-- Card 3: Preparing -->
+          <a href="orders.html?status=Preparing" class="dashboard-card p-4 flex flex-col justify-between group cursor-pointer"
+             style="border-left: 4px solid var(--primary);">
+            <div class="flex items-center justify-between">
+              <span class="text-xs font-bold uppercase tracking-wider" style="color: var(--text-muted);">Preparing</span>
+              <span class="text-xl">🧑‍🍳</span>
+            </div>
+            <div class="mt-3">
+              <span id="metricPreparingOrders" class="text-3xl font-extrabold tracking-tight" style="color: var(--text-dark);">0</span>
+              <p class="text-[11px] font-medium mt-0.5 group-hover:underline" style="color: var(--primary);">In kitchen</p>
+            </div>
+          </a>
+
+          <!-- Card 4: Ready for Pickup -->
+          <a href="orders.html?status=Ready" class="dashboard-card p-4 flex flex-col justify-between group cursor-pointer"
+             style="border-left: 4px solid var(--success);">
+            <div class="flex items-center justify-between">
+              <span class="text-xs font-bold uppercase tracking-wider" style="color: var(--text-muted);">Ready</span>
+              <span class="text-xl">🔔</span>
+            </div>
+            <div class="mt-3">
+              <span id="metricReadyOrders" class="text-3xl font-extrabold tracking-tight" style="color: var(--success);">0</span>
+              <p class="text-[11px] font-medium mt-0.5 group-hover:underline" style="color: var(--success);">Awaiting pickup</p>
+            </div>
+          </a>
+
+          <!-- Card 5: Collected -->
+          <a href="orders.html?status=Collected" class="dashboard-card p-4 flex flex-col justify-between group cursor-pointer">
+            <div class="flex items-center justify-between">
+              <span class="text-xs font-bold uppercase tracking-wider" style="color: var(--text-muted);">Collected</span>
+              <span class="text-xl">✅</span>
+            </div>
+            <div class="mt-3">
+              <span id="metricCollectedOrders" class="text-3xl font-extrabold tracking-tight" style="color: var(--text-dark);">0</span>
+              <p class="text-[11px] font-medium mt-0.5 group-hover:underline" style="color: var(--text-muted);">Completed</p>
+            </div>
+          </a>
+
+          <!-- Card 6: Sales Today -->
+          <a href="orders.html" class="dashboard-card p-4 flex flex-col justify-between group cursor-pointer"
+             style="background-color: var(--bg-notice); border-color: var(--border-notice);">
+            <div class="flex items-center justify-between">
+              <span class="text-xs font-bold uppercase tracking-wider" style="color: var(--text-dark);">Today's Sales</span>
+              <span class="text-xl">💰</span>
+            </div>
+            <div class="mt-3">
+              <span id="metricSalesToday" class="text-2xl font-black tracking-tight" style="color: var(--text-dark);">₹0</span>
+              <p class="text-[11px] font-bold mt-0.5" style="color: var(--primary);">Paid &amp; Collected</p>
+            </div>
+          </a>
+
+        </div>
+      </section>
+
+      <!-- ===================================================================== -->
+      <!-- 2. MAIN 2-COLUMN LAYOUT: (Next Up Orders + Slot Usage & Quick Panels)   -->
+      <!-- ===================================================================== -->
+      <div class="grid grid-cols-1 lg:grid-cols-12 gap-6">
+
+        <!-- LEFT COLUMN: "Next Up" Live Orders Panel (7 cols) -->
+        <section class="lg:col-span-7 space-y-6">
+          <div class="dashboard-card p-5">
+            <div class="flex items-center justify-between pb-3 border-b" style="border-color: var(--border-soft);">
+              <div>
+                <h3 class="text-base font-extrabold" style="color: var(--text-dark);">Next Up (Kitchen Queue)</h3>
+                <p class="text-xs mt-0.5" style="color: var(--text-muted);">Upcoming 5 active orders sorted by pickup slot</p>
+              </div>
+              <a href="queue.html" class="text-xs font-bold hover:underline" style="color: var(--primary);">
+                Full Queue &rarr;
+              </a>
+            </div>
+
+            <!-- Next Up Order Cards List -->
+            <div id="nextUpList" class="divide-y mt-2" style="border-color: var(--border-soft);">
+              <!-- Rendered dynamically -->
+            </div>
+          </div>
+
+          <!-- Popular Items Today Panel -->
+          <div class="dashboard-card p-5">
+            <div class="flex items-center justify-between pb-3 border-b" style="border-color: var(--border-soft);">
+              <div>
+                <h3 class="text-base font-extrabold" style="color: var(--text-dark);">Popular Items Today</h3>
+                <p class="text-xs mt-0.5" style="color: var(--text-muted);">Top 5 menu favorites ordered by students</p>
+              </div>
+              <span class="text-lg">🔥</span>
+            </div>
+            <div id="popularItemsList" class="mt-4 space-y-3.5">
+              <!-- Rendered dynamically -->
+            </div>
+          </div>
+        </section>
+
+        <!-- RIGHT COLUMN: Slot Usage, Low Stock & Payments (5 cols) -->
+        <section class="lg:col-span-5 space-y-6">
+          
+          <!-- Slot Usage Panel -->
+          <div class="dashboard-card p-5">
+            <div class="flex items-center justify-between pb-3 border-b" style="border-color: var(--border-soft);">
+              <div>
+                <h3 class="text-base font-extrabold" style="color: var(--text-dark);">Slot Usage</h3>
+                <p class="text-xs mt-0.5" style="color: var(--text-muted);">Capacity per 10-min pickup interval</p>
+              </div>
+              <a href="slots.html" class="text-xs font-bold hover:underline" style="color: var(--primary);">
+                Manage &rarr;
+              </a>
+            </div>
+            <div id="slotUsageList" class="mt-4 space-y-3">
+              <!-- Rendered dynamically -->
+            </div>
+          </div>
+
+          <!-- Sold Out and Low Stock Panel -->
+          <div class="dashboard-card p-5">
+            <div class="flex items-center justify-between pb-3 border-b" style="border-color: var(--border-soft);">
+              <div>
+                <h3 class="text-base font-extrabold" style="color: var(--text-dark);">Stock &amp; Availability Alerts</h3>
+                <p class="text-xs mt-0.5" style="color: var(--text-muted);">Unavailable items or stock &le; 3</p>
+              </div>
+              <a href="admin.html" class="text-xs font-bold hover:underline" style="color: var(--primary);">
+                Manage menu &rarr;
+              </a>
+            </div>
+            <div id="lowStockList" class="mt-3 divide-y" style="border-color: var(--border-soft);">
+              <!-- Rendered dynamically -->
+            </div>
+          </div>
+
+          <!-- Payments Status Summary Panel -->
+          <div class="dashboard-card p-5">
+            <div class="flex items-center justify-between pb-3 border-b" style="border-color: var(--border-soft);">
+              <div>
+                <h3 class="text-base font-extrabold" style="color: var(--text-dark);">Payments Status</h3>
+                <p class="text-xs mt-0.5" style="color: var(--text-muted);">Daily financial settlement summary</p>
+              </div>
+              <span class="text-lg">💳</span>
+            </div>
+            <div id="paymentsSummary" class="mt-4 grid grid-cols-3 gap-2.5 text-center">
+              <!-- Rendered dynamically -->
+            </div>
+          </div>
+
+        </section>
+
+      </div>
+
+      <!-- ===================================================================== -->
+      <!-- 3. QUICK ACTIONS ROW                                                  -->
+      <!-- ===================================================================== -->
+      <section class="p-5 rounded-2xl border flex flex-wrap items-center justify-between gap-4"
+               style="background-color: var(--bg-panel); border-color: var(--border-soft);">
+        <div>
+          <h4 class="text-sm font-extrabold" style="color: var(--text-dark);">Canteen Staff Quick Actions</h4>
+          <p class="text-xs" style="color: var(--text-muted);">Direct shortcuts to commonly used administrative workflows</p>
+        </div>
+        <div class="flex flex-wrap items-center gap-2.5">
+          <a href="admin.html" 
+             class="btn-primary text-xs font-bold px-4 py-2.5 inline-flex items-center gap-2">
+            <span>+</span> <span>Add Menu Item</span>
+          </a>
+          <a href="queue.html" 
+             class="text-xs font-bold px-4 py-2.5 rounded-2xl border shadow-sm transition hover:opacity-85 inline-flex items-center gap-2"
+             style="background-color: var(--bg-card); color: var(--text-dark); border-color: var(--border-soft);">
+            <span>⏱️</span> <span>View Queue</span>
+          </a>
+          <a href="slots.html" 
+             class="text-xs font-bold px-4 py-2.5 rounded-2xl border shadow-sm transition hover:opacity-85 inline-flex items-center gap-2"
+             style="background-color: var(--bg-card); color: var(--text-dark); border-color: var(--border-soft);">
+            <span>🕒</span> <span>Manage Slots</span>
+          </a>
+        </div>
+      </section>
+
+    </div>
+  </main>
+
+  <!-- ========================================================================= -->
+  <!-- FLOATING TOAST NOTIFICATION CONTAINER                                     -->
+  <!-- ========================================================================= -->
+  <div id="toastContainer" class="fixed bottom-5 right-5 z-50 flex flex-col gap-2 pointer-events-none" aria-live="polite"></div>
+
+  <!-- ========================================================================= -->
+  <!-- JAVASCRIPT: DATA MANAGEMENT & REAL-TIME DASHBOARD LOGIC                   -->
+  <!-- ========================================================================= -->
+  <script>
+    // Data access is handled by storage.js
+
+
+    // -------------------------------------------------------------------------
+    // 2. DASHBOARD RENDERING LOGIC
+    // -------------------------------------------------------------------------
+
+    /**
+     * Main data loader and coordinator
+     */
+    async function loadData() {
+      await updateHeaderInfo();
+      await renderSummary();
+      await renderNextUp();
+      await renderSlotUsage();
+      await renderLowStock();
+      await renderPopular();
+      await renderPayments();
+    }
+
+    /**
+     * Updates header date, dynamic greeting and canteen toggle
+     */
+    async function updateHeaderInfo() {
+      // Date badge
+      const now = new Date();
+      const options = { weekday: 'short', day: 'numeric', month: 'short' };
+      document.getElementById('currentDateBadge').textContent = now.toLocaleDateString('en-US', options);
+
+      // Dynamic Greeting based on current hour
+      const hour = now.getHours();
+      let greeting = 'Good morning, Admin';
+      if (hour >= 12 && hour < 17) {
+        greeting = 'Good afternoon, Admin';
+      } else if (hour >= 17) {
+        greeting = 'Good evening, Admin';
+      }
+      document.getElementById('greetingText').textContent = greeting;
+
+      // Canteen status toggle & banner
+      const isOpen = await isCanteenOpen();
+      const toggle = document.getElementById('canteenToggle');
+      const label = document.getElementById('canteenStatusLabel');
+      const sub = document.getElementById('canteenStatusSub');
+      const banner = document.getElementById('canteenClosedBanner');
+      const track = document.getElementById('canteenToggleTrack');
+
+      if (toggle) toggle.checked = isOpen;
+      if (isOpen) {
+        if (label) { label.textContent = 'Canteen Open'; label.style.color = 'var(--success)'; }
+        if (sub) sub.textContent = 'Accepting orders';
+        if (banner) banner.classList.add('hidden');
+        if (track) track.style.backgroundColor = 'var(--primary)';
+      } else {
+        if (label) { label.textContent = 'Canteen Closed'; label.style.color = 'var(--danger)'; }
+        if (sub) sub.textContent = 'Orders paused';
+        if (banner) banner.classList.remove('hidden');
+        if (track) track.style.backgroundColor = 'var(--border-soft)';
+      }
+    }
+
+    /**
+     * Toggles canteen operational status
+     */
+    async function toggleCanteenStatus(isOpen) {
+      await setCanteenOpen(isOpen);
+      await updateHeaderInfo();
+      showToast(isOpen ? 'Canteen marked as OPEN for orders' : 'Canteen marked as CLOSED', isOpen ? 'success' : 'warning');
+    }
+
+    /**
+     * Renders 6 KPI Summary Cards
+     */
+    async function renderSummary() {
+      const orders = await getOrders();
+
+      const total = orders.length;
+      const placed = orders.filter(o => o.orderStatus === 'Placed').length;
+      const preparing = orders.filter(o => o.orderStatus === 'Preparing').length;
+      const ready = orders.filter(o => o.orderStatus === 'Ready').length;
+      const collected = orders.filter(o => o.orderStatus === 'Collected').length;
+
+      // Sales: only orders that are Paid or already Collected
+      const sales = orders
+        .filter(o => o.paymentStatus === 'Paid' || o.orderStatus === 'Collected')
+        .reduce((sum, o) => sum + (Number(o.total) || 0), 0);
+
+      document.getElementById('metricTotalOrders').textContent = total;
+      document.getElementById('metricPlacedOrders').textContent = placed;
+      document.getElementById('metricPreparingOrders').textContent = preparing;
+      document.getElementById('metricReadyOrders').textContent = ready;
+      document.getElementById('metricCollectedOrders').textContent = collected;
+      document.getElementById('metricSalesToday').textContent = `₹${sales}`;
+    }
+
+    /**
+     * Helper to render colored status badge
+     */
+    function getStatusBadge(status) {
+      if (status === 'Placed') {
+        return `<span class="px-2.5 py-0.5 rounded-full text-xs font-bold" style="background-color: var(--accent); color: var(--text-dark);">Placed</span>`;
+      } else if (status === 'Preparing') {
+        return `<span class="px-2.5 py-0.5 rounded-full text-xs font-bold text-white" style="background-color: var(--primary);">Preparing</span>`;
+      } else if (status === 'Ready') {
+        return `<span class="px-2.5 py-0.5 rounded-full text-xs font-bold" style="background-color: var(--success-bg); color: var(--success); border: 1px solid var(--success);">Ready</span>`;
+      } else if (status === 'Collected') {
+        return `<span class="px-2.5 py-0.5 rounded-full text-xs font-bold" style="background-color: var(--neutral-bg); color: var(--text-muted); border: 1px solid var(--border-soft);">Collected</span>`;
+      } else {
+        return `<span class="px-2.5 py-0.5 rounded-full text-xs font-bold" style="background-color: var(--danger-bg); color: var(--danger); border: 1px solid var(--danger);">${status}</span>`;
+      }
+    }
+
+    /**
+     * Renders "Next Up" Live Orders Panel (Next 5 active orders)
+     */
+    async function renderNextUp() {
+      const container = document.getElementById('nextUpList');
+      const orders = await getOrders();
+
+      // Filter orders that are not yet Collected, Cancelled or Missed
+      const activeOrders = orders.filter(o => 
+        o.orderStatus !== 'Collected' && 
+        o.orderStatus !== 'Cancelled' && 
+        o.orderStatus !== 'Missed'
+      ).slice(0, 5);
+
+      if (activeOrders.length === 0) {
+        container.innerHTML = `
+          <div class="py-8 text-center" style="color: var(--text-muted);">
+            <p class="text-3xl mb-2">🎉</p>
+            <p class="text-xs font-bold">No active orders in the queue right now.</p>
+            <p class="text-[11px] mt-0.5">New student orders will automatically appear here.</p>
+          </div>
+        `;
+        return;
+      }
+
+      container.innerHTML = activeOrders.map(order => {
+        let actionBtnText = '';
+        let nextStatus = '';
+
+        if (order.orderStatus === 'Placed') {
+          actionBtnText = 'Start Preparing &rarr;';
+          nextStatus = 'Preparing';
+        } else if (order.orderStatus === 'Preparing') {
+          actionBtnText = 'Mark Ready &rarr;';
+          nextStatus = 'Ready';
+        } else if (order.orderStatus === 'Ready') {
+          actionBtnText = 'Mark Collected &rarr;';
+          nextStatus = 'Collected';
+        }
+
+        const itemsSummary = (order.items || []).map(i => `${i.qty}x ${i.name}`).join(', ');
+
+        return `
+          <div class="py-3.5 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+            <div class="flex items-start gap-3">
+              <span class="w-12 h-12 rounded-xl flex items-center justify-center font-extrabold text-sm shadow-xs"
+                    style="background-color: var(--bg-notice); color: var(--primary); border: 1px solid var(--border-notice);">
+                ${order.token || '#000'}
+              </span>
+              <div>
+                <div class="flex items-center gap-2">
+                  <h4 class="font-extrabold text-sm" style="color: var(--text-dark);">${order.studentName}</h4>
+                  ${getStatusBadge(order.orderStatus)}
+                </div>
+                <p class="text-xs font-semibold mt-0.5" style="color: var(--text-muted);">
+                  Slot: <span class="font-bold" style="color: var(--text-dark);">${order.slotTime}</span> &bull; 
+                  <span>₹${order.total}</span>
+                </p>
+                <p class="text-[11px] line-clamp-1 mt-0.5" style="color: var(--text-muted);" title="${itemsSummary}">
+                  ${itemsSummary}
+                </p>
+              </div>
+            </div>
+
+            <!-- Quick Advance Status Button -->
+            ${actionBtnText ? `
+              <button type="button" 
+                      onclick="advanceStatus('${order.id}', '${nextStatus}')" 
+                      class="btn-primary text-xs font-bold px-3.5 py-2 self-start sm:self-center shadow-xs">
+                ${actionBtnText}
+              </button>
+            ` : ''}
+          </div>
+        `;
+      }).join('');
+    }
+
+    /**
+     * Advances an order's status and refreshes all metrics
+     */
+    async function advanceStatus(orderId, nextStatus) {
+      try {
+        const updated = await updateOrderStatus(orderId, nextStatus);
+        if (updated) {
+          showToast(`Order ${updated.token || orderId} moved to ${nextStatus}`, 'success');
+        } else {
+          showToast(`Moved order to ${nextStatus}`, 'success');
+        }
+        await loadData();
+      } catch (err) {
+        console.error('Failed to update order status:', err);
+        showToast(err.message || 'Failed to update order status', 'error');
+      }
+    }
+
+    /**
+     * Renders "Slot Usage" Panel (Next 6 slots with visual capacity bar)
+     */
+    async function renderSlotUsage() {
+      const container = document.getElementById('slotUsageList');
+      let slots = await getSlots();
+      if (!slots || slots.length === 0) {
+        if (typeof generateAvailableTimeSlots === 'function') {
+          slots = await generateAvailableTimeSlots();
+        }
+      }
+
+      // Show upcoming slots
+      const displaySlots = (slots && slots.length >= 26) ? slots.slice(20, 26) : (slots ? slots.slice(0, 6) : []);
+
+      if (!displaySlots || displaySlots.length === 0) {
+        container.innerHTML = `<p class="text-xs text-center py-4" style="color: var(--text-muted);">No slots scheduled.</p>`;
+        return;
+      }
+
+      container.innerHTML = displaySlots.map(slot => {
+        const timeLabel = slot.time || (typeof formatSlotTime12 === 'function' && slot.start ? formatSlotTime12(slot.start) : (slot.start || 'Slot'));
+        const max = slot.maxOrders || 8;
+        const booked = Math.min(slot.bookedCount || 0, max);
+        const percent = Math.min(100, Math.round((booked / max) * 100));
+        const isFull = booked >= max;
+
+        let barColor = 'var(--primary)';
+        if (percent >= 90) barColor = 'var(--danger)';
+        else if (percent >= 60) barColor = 'var(--accent)';
+
+        return `
+          <div class="space-y-1">
+            <div class="flex items-center justify-between text-xs font-bold">
+              <span style="color: var(--text-dark);">${timeLabel}</span>
+              <div class="flex items-center gap-1.5">
+                <span style="color: var(--text-muted);">${booked}/${max} booked</span>
+                ${isFull ? `
+                  <span class="text-[10px] px-1.5 py-0.2 rounded font-extrabold" 
+                        style="background-color: var(--danger); color: white;">FULL</span>
+                ` : ''}
+              </div>
+            </div>
+            <!-- Progress Bar -->
+            <div class="w-full h-2.5 rounded-full overflow-hidden" style="background-color: var(--bg-panel);">
+              <div class="h-full rounded-full transition-all duration-300" 
+                   style="width: ${percent}%; background-color: ${barColor};"></div>
+            </div>
+          </div>
+        `;
+      }).join('');
+    }
+
+    /**
+     * Renders "Sold out and low stock" Panel
+     */
+    async function renderLowStock() {
+      const container = document.getElementById('lowStockList');
+      const menu = await getMenu();
+
+      // Items that are unavailable, or stock <= 3
+      const alerts = menu.filter(item => 
+        !item.isAvailable || (item.stock !== null && item.stock !== undefined && item.stock <= 3)
+      );
+
+      if (alerts.length === 0) {
+        container.innerHTML = `
+          <div class="py-5 text-center" style="color: var(--success);">
+            <p class="text-2xl mb-1">✓</p>
+            <p class="text-xs font-bold">Everything is in stock.</p>
+            <p class="text-[11px] mt-0.5" style="color: var(--text-muted);">No items are currently running low.</p>
+          </div>
+        `;
+        return;
+      }
+
+      container.innerHTML = alerts.slice(0, 4).map(item => {
+        const isSoldOut = !item.isAvailable || item.stock === 0;
+
+        return `
+          <div class="py-2.5 flex items-center justify-between gap-2 text-xs">
+            <div class="flex items-center gap-2">
+              <span class="w-2.5 h-2.5 rounded-full" style="background-color: ${isSoldOut ? 'var(--danger)' : 'var(--accent)'};"></span>
+              <span class="font-bold line-clamp-1" style="color: var(--text-dark);">${item.name}</span>
+            </div>
+            <span class="font-extrabold px-2 py-0.5 rounded-lg text-[11px]" 
+                  style="${isSoldOut ? 'background-color: var(--danger-bg); color: var(--danger);' : 'background-color: var(--bg-notice); color: var(--accent);'}">
+              ${isSoldOut ? 'Sold out' : `Only ${item.stock} left`}
+            </span>
+          </div>
+        `;
+      }).join('');
+    }
+
+    /**
+     * Renders "Popular items today" Panel (Top 5 ordered items)
+     */
+    async function renderPopular() {
+      const container = document.getElementById('popularItemsList');
+      const orders = await getOrders();
+
+      // Aggregate quantities by item name
+      const counts = {};
+      orders.forEach(o => {
+        (o.items || []).forEach(i => {
+          counts[i.name] = (counts[i.name] || 0) + (i.qty || 1);
+        });
+      });
+
+      const sorted = Object.entries(counts)
+        .map(([name, qty]) => ({ name, qty }))
+        .sort((a, b) => b.qty - a.qty)
+        .slice(0, 5);
+
+      if (sorted.length === 0) {
+        container.innerHTML = `<p class="text-xs text-center py-4" style="color: var(--text-muted);">No sales data yet today.</p>`;
+        return;
+      }
+
+      const maxQty = sorted[0].qty || 1;
+
+      container.innerHTML = sorted.map(item => {
+        const percent = Math.round((item.qty / maxQty) * 100);
+
+        return `
+          <div class="space-y-1">
+            <div class="flex items-center justify-between text-xs font-semibold">
+              <span class="font-bold line-clamp-1" style="color: var(--text-dark);">${item.name}</span>
+              <span style="color: var(--text-muted);">${item.qty} ordered</span>
+            </div>
+            <div class="w-full h-2 rounded-full overflow-hidden" style="background-color: var(--bg-panel);">
+              <div class="h-full rounded-full" 
+                   style="width: ${percent}%; background-color: var(--accent);"></div>
+            </div>
+          </div>
+        `;
+      }).join('');
+    }
+
+    /**
+     * Renders "Payments" Panel (Paid, Pending, Failed breakdown)
+     */
+    async function renderPayments() {
+      const container = document.getElementById('paymentsSummary');
+      const orders = await getOrders();
+
+      const paid = orders.filter(o => o.paymentStatus === 'Paid').length;
+      const pending = orders.filter(o => o.paymentStatus === 'Pending').length;
+      const failed = orders.filter(o => o.paymentStatus === 'Failed').length;
+
+      container.innerHTML = `
+        <div class="p-2.5 rounded-xl border shadow-xs" style="background-color: var(--success-bg); border-color: var(--success);">
+          <p class="text-[11px] font-bold uppercase tracking-wider" style="color: var(--success);">Paid</p>
+          <p class="text-xl font-extrabold mt-0.5" style="color: var(--success);">${paid}</p>
+        </div>
+        <div class="p-2.5 rounded-xl border shadow-xs" style="background-color: var(--bg-notice); border-color: var(--border-notice);">
+          <p class="text-[11px] font-bold uppercase tracking-wider" style="color: var(--accent);">Pending</p>
+          <p class="text-xl font-extrabold mt-0.5" style="color: var(--text-dark);">${pending}</p>
+        </div>
+        <div class="p-2.5 rounded-xl border shadow-xs" style="background-color: var(--danger-bg); border-color: var(--danger);">
+          <p class="text-[11px] font-bold uppercase tracking-wider" style="color: var(--danger);">Failed</p>
+          <p class="text-xl font-extrabold mt-0.5" style="color: var(--danger);">${failed}</p>
+        </div>
+      `;
+    }
+
+    // -------------------------------------------------------------------------
+    // 3. TOAST NOTIFICATION UTILITY
+    // -------------------------------------------------------------------------
+    function showToast(message, type = 'info') {
+      const container = document.getElementById('toastContainer');
+      const toast = document.createElement('div');
+      
+      let icon = 'ℹ️';
+      let borderAccent = 'var(--primary)';
+
+      if (type === 'success') {
+        icon = '✅';
+        borderAccent = 'var(--success)';
+      } else if (type === 'warning') {
+        icon = '⚠️';
+        borderAccent = 'var(--accent)';
+      } else if (type === 'error') {
+        icon = '❌';
+        borderAccent = 'var(--danger)';
+      }
+
+      toast.className = `pointer-events-auto flex items-center gap-2.5 px-4 py-3 rounded-2xl shadow-xl text-xs font-bold transform transition-all duration-300 translate-y-3 opacity-0`;
+      toast.style.backgroundColor = 'var(--text-dark)';
+      toast.style.color = 'var(--bg-page)';
+      toast.style.border = '1px solid var(--border-soft)';
+      toast.style.borderLeft = `5px solid ${borderAccent}`;
+      toast.style.boxShadow = '0 10px 25px -3px rgba(47, 33, 24, 0.35)';
+      toast.innerHTML = `<span>${icon}</span> <span>${message}</span>`;
+
+      container.appendChild(toast);
+
+      requestAnimationFrame(() => {
+        toast.classList.remove('translate-y-3', 'opacity-0');
+      });
+
+      setTimeout(() => {
+        toast.classList.add('opacity-0', 'translate-y-2');
+        setTimeout(() => toast.remove(), 300);
+      }, 2800);
+    }
+
+    // -------------------------------------------------------------------------
+    // 4. LOGOUT & AUTH GUARD
+    // -------------------------------------------------------------------------
+    async function handleLogout(event) {
+      if (event) event.preventDefault();
+      await logoutUser();
+      window.location.href = 'login.html';
+    }
+
+    // -------------------------------------------------------------------------
+    // 5. AUTO-REFRESH & CROSS-TAB SYNC
+    // -------------------------------------------------------------------------
+    let refreshInterval = null;
+
+    function startAutoRefresh() {
+      if (refreshInterval) clearInterval(refreshInterval);
+      refreshInterval = setInterval(loadData, 15000);
+    }
+
+    document.addEventListener('DOMContentLoaded', async () => {
+      // 1. Auth Guard: Admin access only
+      const session = await getSession();
+      if (!session || session.role !== 'admin') {
+        window.location.href = 'login.html';
+        return;
+      }
+
+      // 2. Initial load & 15-second refresh interval
+      await loadData();
+      startAutoRefresh();
+
+      // 3. Listen for changes made in other tabs (e.g. admin.html editing menu or orders)
+      window.addEventListener('storage', async (e) => {
+        const watchedKeys = [
+          typeof STORAGE_KEYS !== 'undefined' ? STORAGE_KEYS.ORDERS : 'cubite_orders',
+          typeof STORAGE_KEYS !== 'undefined' ? STORAGE_KEYS.MENU : 'cubite_menu',
+          typeof STORAGE_KEYS !== 'undefined' ? STORAGE_KEYS.SLOTS : 'cubite_slots',
+          typeof STORAGE_KEYS !== 'undefined' ? STORAGE_KEYS.CANTEEN_OPEN : 'cubite_canteen_open'
+        ];
+        if (watchedKeys.includes(e.key)) {
+          await loadData();
+        }
+      });
+
+      // 4. Tab visibility & focus synchronization
+      document.addEventListener('visibilitychange', async () => {
+        if (document.visibilityState === 'visible') {
+          await loadData();
+        }
+      });
+
+      window.addEventListener('focus', async () => {
+        await loadData();
+      });
+    });
+  </script>
+
+</body>
+</html>

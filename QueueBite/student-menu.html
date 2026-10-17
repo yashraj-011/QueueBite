@@ -1,0 +1,969 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>QueueBite – Student Menu</title>
+  <!-- Tailwind CSS via CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <!-- Theme Configuration (Cocoa & Cream) -->
+  <script src="theme.js"></script>
+  <!-- Plus Jakarta Sans Font (matches admin.html, orders.html & login.html) -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+
+  <style>
+    /* ========================================================================= */
+    /* THEME: "Cocoa and Cream" (Exact palette from admin.html & orders.html)    */
+    /* ========================================================================= */
+    :root {
+      --bg-page:        #FBF4E9;   /* main cream background */
+      --bg-panel:       #EFE3D3;   /* sidebar, filter bar, toggle tracks, chips */
+      --bg-card:        #FFFFFF;   /* cards, inputs, modal */
+      --bg-notice:      #FAE8D0;   /* info boxes, highlights, tag backgrounds */
+      --border-notice:  #F0C888;   /* border of info boxes */
+      --border-soft:    #E4D6C3;   /* normal card and input borders */
+      --text-dark:      #2F2118;   /* headings and main text */
+      --text-muted:     #6B5645;   /* labels, secondary text */
+      --text-placeholder: #B9AA9A; /* placeholder text */
+      --primary:        #8B5E3C;   /* main buttons, active tabs, headers */
+      --primary-hover:  #774D2F;   /* button hover */
+      --accent:         #E9A23B;   /* mustard: tags, highlights */
+      --success:        #4F7A4A;   /* Available / Veg */
+      --success-bg:     #E3EFDC;
+      --danger:         #B3453A;   /* Sold out / Non-veg */
+      --danger-bg:      #F7DEDA;
+      --neutral-bg:     #E4DDD3;
+    }
+
+    body {
+      font-family: 'Plus Jakarta Sans', sans-serif;
+      background-color: var(--bg-page);
+      color: var(--text-dark);
+    }
+
+    /* Cards */
+    .dashboard-card {
+      background-color: var(--bg-card);
+      border: 1px solid var(--border-soft);
+      border-radius: 20px;
+      box-shadow: 0 4px 20px -2px rgba(47, 33, 24, 0.06);
+      transition: all 0.2s ease;
+    }
+
+    /* Primary buttons */
+    .btn-primary {
+      background-color: var(--primary);
+      color: #FFFFFF;
+      border-radius: 14px;
+      box-shadow: 0 4px 14px -2px rgba(139, 94, 60, 0.28);
+      transition: all 0.2s ease;
+      cursor: pointer;
+    }
+    .btn-primary:hover {
+      background-color: var(--primary-hover);
+      box-shadow: 0 6px 18px -2px rgba(139, 94, 60, 0.38);
+    }
+    .btn-primary:active {
+      transform: scale(0.97);
+    }
+
+    /* Input focus styling: 2px primary border */
+    input:focus {
+      outline: none !important;
+      border-color: var(--primary) !important;
+      box-shadow: 0 0 0 2px rgba(139, 94, 60, 0.2) !important;
+    }
+
+    input::placeholder {
+      color: var(--text-placeholder);
+    }
+
+    /* Hide scrollbars for cleaner horizontal category scrolling */
+    .no-scrollbar::-webkit-scrollbar {
+      display: none;
+    }
+    .no-scrollbar {
+      -ms-overflow-style: none;
+      scrollbar-width: none;
+    }
+  </style>
+</head>
+
+<body class="min-h-screen flex flex-col antialiased selection:bg-[#E9A23B] selection:text-[#2F2118]">
+
+  <!-- ========================================================================= -->
+  <!-- 1. TOP NAVBAR (Sticky header with logo, links, cart & student profile)    -->
+  <!-- ========================================================================= -->
+  <header class="sticky top-0 z-30 border-b backdrop-blur-md transition-all"
+          style="background-color: rgba(251, 244, 233, 0.94); border-color: var(--border-soft);">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+      <div class="flex items-center justify-between h-16 sm:h-20">
+
+        <!-- Brand Logo -->
+        <a href="student-menu.html" class="flex items-center gap-2.5 group">
+          <div class="w-10 h-10 rounded-2xl flex items-center justify-center text-white text-xl shadow-md transition group-hover:scale-105"
+               style="background-color: var(--primary); box-shadow: 0 4px 14px rgba(139, 94, 60, 0.3);">
+            🍛
+          </div>
+          <div>
+            <span class="font-extrabold text-xl sm:text-2xl tracking-tight leading-none" style="color: var(--text-dark);">
+              QueueBite
+            </span>
+            <p class="text-[10px] font-bold tracking-wider uppercase hidden sm:block" style="color: var(--primary);">
+              Student Canteen
+            </p>
+          </div>
+        </a>
+
+        <!-- Desktop Navigation Links -->
+        <nav class="hidden md:flex items-center gap-1.5 p-1.5 rounded-2xl border"
+             style="background-color: var(--bg-panel); border-color: var(--border-soft);">
+          <!-- Menu (Active) -->
+          <a href="student-menu.html"
+             class="px-4 py-2 rounded-xl text-xs font-bold shadow-sm transition"
+             style="background-color: var(--bg-card); color: var(--text-dark);"
+             aria-current="page">
+            🍽️ Menu
+          </a>
+          <!-- My Order -->
+          <a href="student-track.html"
+             class="px-4 py-2 rounded-xl text-xs font-bold transition hover:opacity-80"
+             style="color: var(--text-muted);">
+            ⏱️ My Order
+          </a>
+          <!-- History -->
+          <a href="student-orders.html"
+             class="px-4 py-2 rounded-xl text-xs font-bold transition hover:opacity-80"
+             style="color: var(--text-muted);">
+            🧾 History
+          </a>
+        </nav>
+
+        <!-- Right Side: Cart Button & Profile / Mobile Hamburger -->
+        <div class="flex items-center gap-2 sm:gap-3">
+          
+          <!-- Cart Button with Count Badge -->
+          <a href="student-cart.html" 
+             id="navCartBtn" 
+             class="relative inline-flex items-center gap-2 px-3.5 py-2.5 rounded-2xl text-xs font-extrabold transition hover:opacity-90 active:scale-95 shadow-sm border"
+             style="background-color: var(--bg-card); color: var(--text-dark); border-color: var(--border-soft);"
+             title="View Cart">
+            <span class="text-base leading-none">🛒</span>
+            <span class="hidden sm:inline">Cart</span>
+            <span id="navCartCount" 
+                  class="min-w-[20px] h-5 px-1.5 rounded-full flex items-center justify-center text-[10px] font-black text-white transition-transform scale-100"
+                  style="background-color: var(--primary);">
+              0
+            </span>
+          </a>
+
+          <!-- Desktop Student Profile Info & Logout -->
+          <div class="hidden md:flex items-center gap-2">
+            <div class="px-3 py-2 rounded-2xl border flex items-center gap-2 text-xs font-bold shadow-2xs"
+                 style="background-color: var(--bg-panel); border-color: var(--border-soft); color: var(--text-dark);">
+              <span>🎓</span>
+              <span id="desktopStudentName">Student</span>
+            </div>
+            <button type="button" 
+                    onclick="handleLogout()" 
+                    class="px-3 py-2 rounded-2xl border text-xs font-bold transition hover:opacity-85 shadow-2xs"
+                    style="background-color: var(--danger-bg); border-color: rgba(179, 69, 58, 0.25); color: var(--danger);"
+                    title="Sign out of student account">
+              Logout
+            </button>
+          </div>
+
+          <!-- Mobile Hamburger Toggle Button (Phones) -->
+          <button type="button" 
+                  id="mobileMenuBtn" 
+                  onclick="toggleMobileMenu()" 
+                  class="md:hidden w-10 h-10 rounded-2xl border flex items-center justify-center text-lg font-bold transition shadow-sm"
+                  style="background-color: var(--bg-card); border-color: var(--border-soft); color: var(--text-dark);"
+                  aria-label="Toggle mobile menu">
+            ☰
+          </button>
+
+        </div>
+
+      </div>
+    </div>
+
+    <!-- Mobile Collapsed Dropdown Menu -->
+    <div id="mobileMenuDropdown" 
+         class="hidden md:hidden border-t px-4 py-3 space-y-2 transition-all"
+         style="background-color: var(--bg-panel); border-color: var(--border-soft);">
+      <div class="flex items-center justify-between pb-2 border-b" style="border-color: var(--border-soft);">
+        <div class="flex items-center gap-2 text-xs font-extrabold" style="color: var(--text-dark);">
+          <span>🎓</span>
+          <span id="mobileStudentName">Student</span>
+        </div>
+        <button type="button" 
+                onclick="handleLogout()" 
+                class="text-xs font-bold px-2.5 py-1 rounded-xl"
+                style="background-color: var(--danger-bg); color: var(--danger);">
+          Logout
+        </button>
+      </div>
+
+      <a href="student-menu.html" 
+         class="block px-3 py-2.5 rounded-xl text-xs font-extrabold shadow-sm"
+         style="background-color: var(--bg-card); color: var(--text-dark);">
+        🍽️ Menu (Current)
+      </a>
+      <a href="student-track.html" 
+         class="block px-3 py-2.5 rounded-xl text-xs font-bold hover:bg-white/50"
+         style="color: var(--text-dark);">
+        ⏱️ My Order
+      </a>
+      <a href="student-orders.html" 
+         class="block px-3 py-2.5 rounded-xl text-xs font-bold hover:bg-white/50"
+         style="color: var(--text-dark);">
+        🧾 Order History
+      </a>
+    </div>
+  </header>
+
+  <!-- ========================================================================= -->
+  <!-- MAIN WORKSPACE                                                            -->
+  <!-- ========================================================================= -->
+  <main class="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-6 space-y-6">
+
+    <!-- 2. GREETING & CANTEEN STATUS -->
+    <section class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b pb-5"
+             style="border-color: var(--border-soft);">
+      <div>
+        <h1 class="text-2xl sm:text-3xl font-black tracking-tight" style="color: var(--text-dark);">
+          Hi, <span id="studentGreetingName" style="color: var(--primary);">Student</span> 👋
+        </h1>
+        <p class="text-xs sm:text-sm font-semibold mt-1" style="color: var(--text-muted);">
+          What would you like to eat today? Pre-order now to skip the counter queue!
+        </p>
+      </div>
+
+      <!-- Canteen Open / Closed status pill -->
+      <div id="canteenStatusContainer">
+        <!-- Rendered via JS -->
+      </div>
+    </section>
+
+    <!-- Canteen Closed Notice Banner -->
+    <div id="canteenClosedNoticeBanner" class="hidden p-4 rounded-2xl border flex items-center justify-between gap-3 text-xs font-bold shadow-xs"
+         style="background-color: var(--danger-bg); border-color: var(--danger); color: var(--danger);">
+      <div class="flex items-center gap-2.5">
+        <span class="text-lg">🚫</span>
+        <div>
+          <p class="font-extrabold text-sm">Canteen is Currently Closed</p>
+          <p class="font-medium text-xs mt-0.5 opacity-90">The kitchen is not accepting new orders at this time. You can still browse the menu.</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- 3. SEARCH, CATEGORIES & VEG ONLY SWITCH -->
+    <section class="space-y-4" aria-label="Menu Filters">
+      
+      <!-- Top Row: Search Input & Veg Only Switch -->
+      <div class="flex flex-col sm:flex-row items-stretch sm:items-center gap-3">
+        
+        <!-- Search Box -->
+        <div class="relative flex-1">
+          <span class="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-base" style="color: var(--text-muted);">
+            🔍
+          </span>
+          <input type="text" 
+                 id="searchInput" 
+                 oninput="handleSearchInput()" 
+                 placeholder="Search dishes, samosa, roll, coffee..." 
+                 class="w-full rounded-2xl pl-10 pr-9 py-3 text-sm font-semibold transition border shadow-xs"
+                 style="background-color: var(--bg-card); border-color: var(--border-soft); color: var(--text-dark);" />
+          <button type="button" 
+                  id="clearSearchBtn" 
+                  onclick="clearSearch()" 
+                  class="hidden absolute inset-y-0 right-0 pr-3.5 flex items-center hover:opacity-75 text-sm"
+                  style="color: var(--text-muted);"
+                  title="Clear search">
+            ✕
+          </button>
+        </div>
+
+        <!-- Veg Only Switch -->
+        <label class="flex items-center justify-between sm:justify-start gap-2.5 px-4 py-3 rounded-2xl border shadow-xs cursor-pointer select-none transition"
+               style="background-color: var(--bg-card); border-color: var(--border-soft);">
+          <div class="flex items-center gap-2">
+            <span class="w-3.5 h-3.5 border-2 flex items-center justify-center rounded-[3px]"
+                  style="border-color: var(--success);">
+              <span class="w-2 h-2 rounded-full" style="background-color: var(--success);"></span>
+            </span>
+            <span class="text-xs font-extrabold" style="color: var(--success);">
+              Veg Only
+            </span>
+          </div>
+          <input type="checkbox" 
+                 id="vegOnlySwitch" 
+                 onchange="handleFilterChange()" 
+                 class="w-4 h-4 rounded cursor-pointer" 
+                 style="accent-color: var(--success);" />
+        </label>
+
+      </div>
+
+      <!-- Category Filter Chips Row (Horizontally scrollable on phones) -->
+      <div class="flex items-center gap-2 overflow-x-auto no-scrollbar py-1" id="categoryChipsContainer">
+        <!-- Rendered via JS -->
+      </div>
+
+    </section>
+
+    <!-- 4. MENU ITEMS GRID -->
+    <section aria-label="Canteen Food Items">
+      
+      <!-- Results counter -->
+      <div class="flex items-center justify-between mb-4">
+        <h2 class="text-lg font-black tracking-tight" style="color: var(--text-dark);">
+          Available Items
+        </h2>
+        <span id="resultsCountBadge" class="text-xs font-bold" style="color: var(--text-muted);">
+          Loading menu...
+        </span>
+      </div>
+
+      <!-- Grid -->
+      <div id="menuGrid" class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-5 pb-24 sm:pb-8">
+        <!-- Rendered via renderFilteredMenu() -->
+      </div>
+
+      <!-- Friendly Empty State (When no items match search / filters) -->
+      <div id="emptyMenuState" class="hidden border border-dashed rounded-3xl p-10 sm:p-14 text-center max-w-md mx-auto my-8 shadow-xs"
+           style="background-color: var(--bg-card); border-color: var(--border-soft);">
+        <div class="w-16 h-16 rounded-2xl flex items-center justify-center text-3xl mx-auto mb-3 shadow-xs"
+             style="background-color: var(--bg-notice);">
+          🍽️
+        </div>
+        <h3 class="text-base sm:text-lg font-extrabold" style="color: var(--text-dark);">
+          No dishes found
+        </h3>
+        <p class="text-xs font-semibold mt-1" style="color: var(--text-muted);">
+          We couldn't find any food items matching your search or filters. Try resetting them.
+        </p>
+        <button type="button" 
+                onclick="resetFilters()" 
+                class="btn-primary mt-4 px-5 py-2.5 text-xs font-extrabold shadow-sm">
+          Clear Filters
+        </button>
+      </div>
+
+    </section>
+
+  </main>
+
+  <!-- ========================================================================= -->
+  <!-- 5. STICKY BOTTOM CART BAR (On Phones/Mobile when cart is not empty)        -->
+  <!-- ========================================================================= -->
+  <aside id="mobileBottomCartBar" 
+         class="hidden sm:hidden fixed bottom-0 left-0 right-0 p-3 z-40 border-t shadow-2xl backdrop-blur-md transition-all duration-300"
+         style="background-color: rgba(251, 244, 233, 0.96); border-color: var(--border-soft);">
+    <a href="student-cart.html" 
+       class="btn-primary w-full py-3.5 px-4 flex items-center justify-between text-sm font-extrabold shadow-lg">
+      <div class="flex items-center gap-2.5">
+        <span class="w-7 h-7 rounded-xl flex items-center justify-center text-xs font-black"
+              style="background-color: rgba(255, 255, 255, 0.22);"
+              id="mobileCartItemBadge">
+          0
+        </span>
+        <span id="mobileCartSummaryText">0 items • ₹0</span>
+      </div>
+      <div class="flex items-center gap-1.5 text-xs font-extrabold">
+        <span>View Cart</span>
+        <span class="text-sm">→</span>
+      </div>
+    </a>
+  </aside>
+
+  <!-- ========================================================================= -->
+  <!-- 6. FLOATING TOAST NOTIFICATION CONTAINER                                  -->
+  <!-- ========================================================================= -->
+  <div id="toastContainer" 
+       class="fixed bottom-16 sm:bottom-5 right-5 z-50 flex flex-col gap-2.5 pointer-events-none max-w-sm w-full px-4 sm:px-0">
+  </div>
+
+  <!-- ========================================================================= -->
+  <!-- 7. JAVASCRIPT LOGIC                                                       -->
+  <!-- ========================================================================= -->
+  <script src="storage.js"></script>
+
+  <script>
+    // -------------------------------------------------------------------------
+    // STATE & CONFIGURATION
+    // -------------------------------------------------------------------------
+    let allMenuItems = [];
+    let cartItems = [];
+    let selectedCategory = 'All';
+    let isVegOnly = false;
+    let searchQuery = '';
+
+    const CATEGORY_EMOJIS = {
+      'Snacks': '🥟',
+      'Meals': '🍛',
+      'Beverages': '🥤',
+      'South Indian': '🥞',
+      'Quick Bites': '🥪',
+      'Desserts': '🍩',
+      'Breakfast': '☕'
+    };
+
+    // -------------------------------------------------------------------------
+    // 1. INITIALIZATION & AUTH GUARD
+    // -------------------------------------------------------------------------
+    document.addEventListener('DOMContentLoaded', async () => {
+      // 1. Session check
+      const session = getCurrentUser();
+      if (!session) {
+        // Fallback for seamless testing without requiring hard login
+        saveCurrentUser({ role: 'student', name: 'Student', rollNo: 'IT-101' });
+      } else if (session.role === 'admin') {
+        // If an admin navigates to student menu, redirect to admin overview
+        window.location.href = 'overview.html';
+        return;
+      }
+
+      // 2. Render student name in navbar & greeting
+      const currentStudent = getCurrentUser() || { name: 'Student' };
+      const sName = currentStudent.name || 'Student';
+      document.getElementById('studentGreetingName').textContent = sName;
+      document.getElementById('desktopStudentName').textContent = sName;
+      document.getElementById('mobileStudentName').textContent = sName;
+
+      // 3. Render canteen open status
+      await renderCanteenStatus();
+
+      // 4. Load menu items and cart
+      await loadMenuData();
+
+      // 5. Synchronization (cross-tab storage, visibilitychange, and focus)
+      async function handleMenuSync() {
+        await renderCanteenStatus();
+        await loadMenuData();
+      }
+
+      window.addEventListener('storage', async (event) => {
+        if (!event.key || event.key === STORAGE_KEYS.CART || event.key === STORAGE_KEYS.MENU || event.key === STORAGE_KEYS.CANTEEN_OPEN) {
+          await handleMenuSync();
+        }
+      });
+
+      document.addEventListener('visibilitychange', async () => {
+        if (document.visibilityState === 'visible') {
+          await handleMenuSync();
+        }
+      });
+
+      window.addEventListener('focus', async () => {
+        await handleMenuSync();
+      });
+    });
+
+    /**
+     * Loads menu and cart state from storage.js and triggers render
+     */
+    async function loadMenuData() {
+      allMenuItems = await getMenu();
+      cartItems = await getCart();
+
+      renderCategoryChips();
+      renderFilteredMenu();
+      updateCartCounters();
+    }
+
+    /**
+     * Renders Canteen Open / Closed badge
+     */
+    async function renderCanteenStatus() {
+      const container = document.getElementById('canteenStatusContainer');
+      const banner = document.getElementById('canteenClosedNoticeBanner');
+      if (!container) return;
+
+      const open = await isCanteenOpen();
+      if (banner) {
+        banner.classList.toggle('hidden', open);
+      }
+      if (open) {
+        container.innerHTML = `
+          <div class="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full text-xs font-extrabold shadow-2xs border"
+               style="background-color: var(--success-bg); color: var(--success); border-color: rgba(79, 122, 74, 0.3);">
+            <span class="w-2.5 h-2.5 rounded-full animate-pulse" style="background-color: var(--success);"></span>
+            <span>Canteen Open</span>
+          </div>
+        `;
+      } else {
+        container.innerHTML = `
+          <div class="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full text-xs font-extrabold shadow-2xs border"
+               style="background-color: var(--danger-bg); color: var(--danger); border-color: rgba(179, 69, 58, 0.3);">
+            <span class="w-2.5 h-2.5 rounded-full" style="background-color: var(--danger);"></span>
+            <span>Canteen Closed</span>
+          </div>
+        `;
+      }
+    }
+
+    // -------------------------------------------------------------------------
+    // 2. CATEGORY CHIPS
+    // -------------------------------------------------------------------------
+    function renderCategoryChips() {
+      const container = document.getElementById('categoryChipsContainer');
+      if (!container) return;
+
+      // Collect unique categories present in menu
+      const categoriesSet = new Set(['All']);
+      allMenuItems.forEach(item => {
+        if (item.category) categoriesSet.add(item.category);
+      });
+      const categories = Array.from(categoriesSet);
+
+      container.innerHTML = categories.map(cat => {
+        const isSelected = selectedCategory === cat;
+        const emoji = cat === 'All' ? '✨' : (CATEGORY_EMOJIS[cat] || '🍽️');
+
+        const activeStyles = `background-color: var(--primary); color: #FFFFFF; border-color: var(--primary); box-shadow: 0 4px 12px rgba(139, 94, 60, 0.25);`;
+        const inactiveStyles = `background-color: var(--bg-card); color: var(--text-dark); border-color: var(--border-soft);`;
+
+        return `
+          <button type="button" 
+                  onclick="selectCategory('${cat}')" 
+                  class="whitespace-nowrap px-3.5 py-2 rounded-xl text-xs font-bold border transition active:scale-95 flex items-center gap-1.5"
+                  style="${isSelected ? activeStyles : inactiveStyles}">
+            <span>${emoji}</span>
+            <span>${cat}</span>
+          </button>
+        `;
+      }).join('');
+    }
+
+    function selectCategory(cat) {
+      selectedCategory = cat;
+      renderCategoryChips();
+      renderFilteredMenu();
+    }
+
+    // -------------------------------------------------------------------------
+    // 3. FILTERING & RENDERING MENU CARDS
+    // -------------------------------------------------------------------------
+    function handleSearchInput() {
+      const val = document.getElementById('searchInput').value.trim();
+      searchQuery = val.toLowerCase();
+
+      const clearBtn = document.getElementById('clearSearchBtn');
+      if (searchQuery) {
+        clearBtn.classList.remove('hidden');
+      } else {
+        clearBtn.classList.add('hidden');
+      }
+
+      renderFilteredMenu();
+    }
+
+    function clearSearch() {
+      document.getElementById('searchInput').value = '';
+      searchQuery = '';
+      document.getElementById('clearSearchBtn').classList.add('hidden');
+      renderFilteredMenu();
+    }
+
+    function handleFilterChange() {
+      isVegOnly = document.getElementById('vegOnlySwitch').checked;
+      renderFilteredMenu();
+    }
+
+    function resetFilters() {
+      selectedCategory = 'All';
+      isVegOnly = false;
+      searchQuery = '';
+      document.getElementById('searchInput').value = '';
+      document.getElementById('clearSearchBtn').classList.add('hidden');
+      document.getElementById('vegOnlySwitch').checked = false;
+
+      renderCategoryChips();
+      renderFilteredMenu();
+    }
+
+    function renderFilteredMenu() {
+      const grid = document.getElementById('menuGrid');
+      const emptyState = document.getElementById('emptyMenuState');
+      const badge = document.getElementById('resultsCountBadge');
+
+      // Filter items
+      const filtered = allMenuItems.filter(item => {
+        // Exclude hidden items
+        if (item.isVisible === false || item.visible === false) return false;
+
+        // Search text matching name, description or tags
+        if (searchQuery) {
+          const nameMatch = (item.name || '').toLowerCase().includes(searchQuery);
+          const descMatch = (item.description || item.desc || '').toLowerCase().includes(searchQuery);
+          const tagsMatch = (item.tags || []).some(t => t.toLowerCase().includes(searchQuery));
+          if (!nameMatch && !descMatch && !tagsMatch) return false;
+        }
+
+        // Category filter
+        if (selectedCategory !== 'All' && item.category !== selectedCategory) {
+          return false;
+        }
+
+        // Veg only filter
+        const isVeg = item.isVeg !== undefined ? item.isVeg : item.veg;
+        if (isVegOnly && !isVeg) {
+          return false;
+        }
+
+        return true;
+      });
+
+      badge.textContent = `Showing ${filtered.length} dish${filtered.length === 1 ? '' : 'es'}`;
+
+      if (filtered.length === 0) {
+        grid.innerHTML = '';
+        emptyState.classList.remove('hidden');
+        return;
+      }
+
+      emptyState.classList.add('hidden');
+
+      grid.innerHTML = filtered.map(item => {
+        const isVeg = item.isVeg !== undefined ? item.isVeg : item.veg;
+        const isAvailable = (item.isAvailable !== false && item.available !== false);
+        const hasStock = (item.stock === null || item.stock === undefined || item.stock > 0);
+        const isSoldOut = (!isAvailable || !hasStock);
+
+        // Tags pills HTML
+        const tagsHtml = (item.tags || []).map(tag => {
+          let tagStyle = 'background-color: var(--bg-notice); color: var(--text-dark); border: 1px solid var(--border-notice);';
+          if (tag === 'Bestseller' || tag === 'Special') {
+            tagStyle = 'background-color: var(--accent); color: #FFFFFF; font-weight: 800;';
+          } else if (tag === 'Spicy') {
+            tagStyle = 'background-color: var(--danger-bg); color: var(--danger); border: 1px solid var(--danger);';
+          } else if (tag === 'Healthy') {
+            tagStyle = 'background-color: var(--success-bg); color: var(--success); border: 1px solid var(--success);';
+          } else if (tag === 'New') {
+            tagStyle = 'background-color: var(--bg-notice); color: var(--primary); border: 1px solid var(--border-notice); font-weight: 700;';
+          }
+          return `<span style="${tagStyle}" class="text-[10px] px-2 py-0.5 rounded-md font-bold shadow-2xs">${tag}</span>`;
+        }).join(' ');
+
+        // Fallback category emoji
+        const fallbackEmoji = CATEGORY_EMOJIS[item.category] || '🍽️';
+
+        // Check quantity in cart
+        const cartEntry = cartItems.find(c => c.id === item.id);
+        const cartQty = cartEntry ? cartEntry.qty : 0;
+
+        // Stock scarcity notice ("Only X left" when <= 5)
+        let scarcityNotice = '';
+        if (!isSoldOut && item.stock !== null && item.stock !== undefined && item.stock <= 5) {
+          scarcityNotice = `
+            <span class="inline-block mt-1 text-[11px] font-extrabold px-2 py-0.5 rounded-md border"
+                  style="background-color: var(--danger-bg); color: var(--danger); border-color: rgba(179, 69, 58, 0.3);">
+              🔥 Only ${item.stock} left!
+            </span>
+          `;
+        }
+
+        // Stepper / Add button HTML
+        let actionBtnHtml = '';
+        if (isSoldOut) {
+          actionBtnHtml = `
+            <button disabled 
+                    class="px-4 py-2 rounded-xl text-xs font-bold opacity-60 cursor-not-allowed border"
+                    style="background-color: var(--neutral-bg); color: var(--text-muted); border-color: var(--border-soft);">
+              Sold out
+            </button>
+          `;
+        } else if (cartQty > 0) {
+          // Stepper: - quantity +
+          actionBtnHtml = `
+            <div class="flex items-center gap-1.5 p-1 rounded-xl border shadow-xs"
+                 style="background-color: var(--bg-card); border-color: var(--primary);">
+              <button type="button" 
+                      onclick="handleDecreaseQty('${item.id}')"
+                      class="w-7 h-7 rounded-lg font-black text-sm flex items-center justify-center transition hover:opacity-80 active:scale-90"
+                      style="background-color: var(--bg-panel); color: var(--text-dark);"
+                      title="Decrease quantity">
+                -
+              </button>
+              <span class="w-6 text-center text-xs font-black" style="color: var(--text-dark);">
+                ${cartQty}
+              </span>
+              <button type="button" 
+                      onclick="handleIncreaseQty('${item.id}')"
+                      class="w-7 h-7 rounded-lg font-black text-sm flex items-center justify-center text-white transition hover:opacity-85 active:scale-90"
+                      style="background-color: var(--primary);"
+                      title="Increase quantity">
+                +
+              </button>
+            </div>
+          `;
+        } else {
+          // Add button
+          actionBtnHtml = `
+            <button type="button" 
+                    onclick="handleAddToCart('${item.id}')"
+                    class="btn-primary px-4 py-2 text-xs font-extrabold flex items-center gap-1 shadow-xs">
+              <span class="text-sm font-bold leading-none">+</span>
+              <span>Add</span>
+            </button>
+          `;
+        }
+
+        return `
+          <article class="dashboard-card overflow-hidden flex flex-col justify-between ${isSoldOut ? 'opacity-75' : ''}">
+            
+            <!-- Card Image Area -->
+            <div class="relative h-40 sm:h-44 w-full overflow-hidden flex items-center justify-center"
+                 style="background-color: var(--bg-panel);">
+              
+              <!-- Food Image (or fallback emoji) -->
+              ${item.imageUrl || item.image ? `
+                <img src="${item.imageUrl || item.image}" 
+                     alt="${item.name}" 
+                     class="w-full h-full object-cover"
+                     onerror="this.onerror=null; this.classList.add('hidden'); this.nextElementSibling.classList.remove('hidden');" />
+                <div class="hidden text-6xl select-none">${fallbackEmoji}</div>
+              ` : `
+                <div class="text-6xl select-none">${fallbackEmoji}</div>
+              `}
+
+              <!-- Top Left: Veg / Non-Veg Indicator Dot -->
+              <div class="absolute top-2.5 left-2.5 bg-white/95 backdrop-blur-xs p-1 rounded-lg shadow-xs"
+                   style="border: 1px solid var(--border-soft);" 
+                   title="${isVeg ? 'Vegetarian' : 'Non-Vegetarian'}">
+                <div class="w-3.5 h-3.5 border-2 flex items-center justify-center rounded-[3px]"
+                     style="border-color: ${isVeg ? 'var(--success)' : 'var(--danger)'};">
+                  <div class="w-2 h-2 rounded-full" 
+                       style="background-color: ${isVeg ? 'var(--success)' : 'var(--danger)'};"></div>
+                </div>
+              </div>
+
+              <!-- Top Right: Prep Time -->
+              <div class="absolute top-2.5 right-2.5 bg-white/95 backdrop-blur-xs px-2 py-0.5 rounded-lg shadow-xs text-[11px] font-bold"
+                   style="border: 1px solid var(--border-soft); color: var(--text-muted);">
+                ⏱️ ${item.prepTime || item.prep || 10}m
+              </div>
+
+              <!-- SOLD OUT Big Badge Overlay -->
+              ${isSoldOut ? `
+                <div class="absolute inset-0 bg-black/40 backdrop-blur-[1px] flex items-center justify-center">
+                  <span style="background-color: var(--danger); color: #FFFFFF; border: 2px solid #FFFFFF; border-radius: 12px;"
+                        class="font-black text-xs sm:text-sm tracking-widest px-3.5 py-1.5 uppercase shadow-xl transform -rotate-3">
+                    SOLD OUT
+                  </span>
+                </div>
+              ` : ''}
+
+            </div>
+
+            <!-- Card Details -->
+            <div class="p-4 flex-1 flex flex-col justify-between">
+              <div>
+                <!-- Category -->
+                <p class="text-[10px] font-extrabold uppercase tracking-wider" style="color: var(--text-muted);">
+                  ${item.category || 'Dish'}
+                </p>
+
+                <!-- Item Name -->
+                <h3 class="font-extrabold text-base leading-snug line-clamp-1 mt-0.5" 
+                    style="color: var(--text-dark);" 
+                    title="${item.name}">
+                  ${item.name}
+                </h3>
+
+                <!-- Short Description -->
+                <p class="text-xs font-semibold leading-relaxed line-clamp-2 mt-1" style="color: var(--text-muted);">
+                  ${item.description || item.desc || 'Freshly made canteen special.'}
+                </p>
+
+                <!-- Tags Row -->
+                <div class="flex flex-wrap gap-1 mt-2.5">
+                  ${tagsHtml}
+                </div>
+
+                <!-- Only X left notice -->
+                ${scarcityNotice}
+              </div>
+
+              <!-- Price & Add Stepper Row -->
+              <div class="mt-4 pt-3 border-t flex items-center justify-between gap-2"
+                   style="border-color: var(--border-soft);">
+                <div>
+                  <span class="text-xs font-bold" style="color: var(--text-muted);">Price</span>
+                  <div class="text-lg font-black leading-tight" style="color: var(--text-dark);">
+                    ₹${item.price}
+                  </div>
+                </div>
+
+                ${actionBtnHtml}
+              </div>
+
+            </div>
+
+          </article>
+        `;
+      }).join('');
+    }
+
+    // -------------------------------------------------------------------------
+    // 4. CART INTERACTIONS (Add, Increase, Decrease, Counters)
+    // -------------------------------------------------------------------------
+
+    async function handleAddToCart(itemId) {
+      const open = await isCanteenOpen();
+      if (!open) {
+        showToast('Canteen is closed right now. Orders cannot be placed.', 'warning');
+        return;
+      }
+
+      const item = allMenuItems.find(i => i.id === itemId);
+      if (!item) return;
+
+      // Stock check
+      if (item.stock !== null && item.stock !== undefined && item.stock <= 0) {
+        showToast('This item is currently sold out!', 'warning');
+        return;
+      }
+
+      await addToCart(item);
+      cartItems = await getCart();
+      updateCartCounters();
+      renderFilteredMenu();
+      showToast(`Added ${item.name} to cart`, 'success');
+    }
+
+    async function handleIncreaseQty(itemId) {
+      const open = await isCanteenOpen();
+      if (!open) {
+        showToast('Canteen is closed right now.', 'warning');
+        return;
+      }
+
+      const item = allMenuItems.find(i => i.id === itemId);
+      const cartEntry = cartItems.find(c => c.id === itemId);
+      const currentQty = cartEntry ? cartEntry.qty : 0;
+
+      // Check against maximum available stock
+      if (item && item.stock !== null && item.stock !== undefined) {
+        if (currentQty >= item.stock) {
+          showToast(`Only ${item.stock} available in canteen today!`, 'warning');
+          return;
+        }
+      }
+
+      await updateCartItemQty(itemId, 1);
+      cartItems = await getCart();
+      updateCartCounters();
+      renderFilteredMenu();
+    }
+
+    async function handleDecreaseQty(itemId) {
+      const item = allMenuItems.find(i => i.id === itemId);
+      const cartEntry = cartItems.find(c => c.id === itemId);
+      const currentQty = cartEntry ? cartEntry.qty : 0;
+
+      await updateCartItemQty(itemId, -1);
+      cartItems = await getCart();
+      updateCartCounters();
+      renderFilteredMenu();
+
+      if (currentQty === 1 && item) {
+        showToast(`Removed ${item.name} from cart`, 'info');
+      }
+    }
+
+    /**
+     * Updates top navbar badge and sticky mobile bottom cart bar
+     */
+    async function updateCartCounters() {
+      const summary = await getCartSummary();
+      const countEl = document.getElementById('navCartCount');
+      if (countEl) {
+        countEl.textContent = summary.totalCount;
+        countEl.classList.add('scale-125');
+        setTimeout(() => countEl.classList.remove('scale-125'), 200);
+      }
+
+      // Mobile Bottom Bar
+      const mobileBar = document.getElementById('mobileBottomCartBar');
+      const mobileBadge = document.getElementById('mobileCartItemBadge');
+      const mobileSummary = document.getElementById('mobileCartTotalLabel');
+
+      if (mobileBar && mobileBadge && mobileSummary) {
+        if (summary.totalCount > 0) {
+          mobileBadge.textContent = summary.totalCount;
+          mobileSummary.textContent = `${summary.totalCount} item${summary.totalCount === 1 ? '' : 's'} • ₹${summary.subtotal}`;
+          mobileBar.classList.remove('hidden');
+        } else {
+          mobileBar.classList.add('hidden');
+        }
+      }
+    }
+
+    // -------------------------------------------------------------------------
+    // 5. MOBILE MENU & LOGOUT
+    // -------------------------------------------------------------------------
+    function toggleMobileMenu() {
+      const dropdown = document.getElementById('mobileMenuDropdown');
+      if (dropdown) {
+        dropdown.classList.toggle('hidden');
+      }
+    }
+
+    async function handleLogout() {
+      await logoutUser();
+      showToast('Logged out successfully', 'info');
+      setTimeout(() => {
+        window.location.href = 'login.html';
+      }, 400);
+    }
+
+    // -------------------------------------------------------------------------
+    // 6. TOAST NOTIFICATION UTILITY (Cocoa & Cream)
+    // -------------------------------------------------------------------------
+    function showToast(message, type = 'info') {
+      const container = document.getElementById('toastContainer');
+      if (!container) return;
+
+      const toast = document.createElement('div');
+      let icon = 'ℹ️';
+      let borderAccent = 'var(--primary)';
+
+      if (type === 'success') {
+        icon = '✅';
+        borderAccent = 'var(--success)';
+      } else if (type === 'warning') {
+        icon = '⚠️';
+        borderAccent = 'var(--accent)';
+      } else if (type === 'error') {
+        icon = '❌';
+        borderAccent = 'var(--danger)';
+      }
+
+      toast.className = `pointer-events-auto flex items-center gap-2.5 px-4 py-3 rounded-2xl shadow-xl text-xs font-bold transform transition-all duration-300 translate-y-3 opacity-0`;
+      toast.style.backgroundColor = 'var(--text-dark)';
+      toast.style.color = 'var(--bg-page)';
+      toast.style.border = '1px solid var(--border-soft)';
+      toast.style.borderLeft = `5px solid ${borderAccent}`;
+      toast.style.boxShadow = '0 10px 25px -3px rgba(47, 33, 24, 0.35)';
+      toast.innerHTML = `<span>${icon}</span> <span>${message}</span>`;
+
+      container.appendChild(toast);
+
+      requestAnimationFrame(() => {
+        toast.classList.remove('translate-y-3', 'opacity-0');
+      });
+
+      setTimeout(() => {
+        toast.classList.add('opacity-0', 'translate-y-2');
+        setTimeout(() => toast.remove(), 300);
+      }, 2400);
+    }
+  </script>
+
+</body>
+</html>

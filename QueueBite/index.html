@@ -1,0 +1,206 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>QueueBite – College Canteen Pre-order</title>
+  <!-- Tailwind CSS via CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <!-- Central Theme Configuration -->
+  <script src="theme.js"></script>
+  <!-- Inter Font -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <style>
+    body {
+      font-family: 'Plus Jakarta Sans', sans-serif;
+    }
+    /* Subtle pulse animation for background glow */
+    @keyframes warmGlow {
+      0%, 100% { transform: scale(1); opacity: 0.7; }
+      50% { transform: scale(1.08); opacity: 0.95; }
+    }
+    .glow-bg {
+      animation: warmGlow 5s ease-in-out infinite;
+    }
+    /* Gentle floating animation */
+    @keyframes floatTag {
+      0%, 100% { transform: translateY(0px) rotate(0deg); }
+      50% { transform: translateY(-7px) rotate(1deg); }
+    }
+    .float-badge {
+      animation: floatTag 3.2s ease-in-out infinite;
+    }
+    .float-badge-delayed {
+      animation: floatTag 3.8s ease-in-out 1.2s infinite;
+    }
+  </style>
+</head>
+
+<body class="bg-[#ECE2D5] min-h-screen flex items-center justify-center p-0 sm:py-6 selection:bg-accent selection:text-ink">
+
+  <!-- Mobile Screen Container (Centered phone-width column on laptop/desktop) -->
+  <main class="w-full max-w-md min-h-screen sm:min-h-[850px] bg-cream flex flex-col justify-between shadow-2xl sm:rounded-[36px] overflow-hidden border border-[#E2D2C0]/60 relative">
+
+    <!-- Top Decorative Status Bar (authentic mobile vibe) -->
+    <header class="px-6 pt-4 pb-2 flex items-center justify-between text-xs text-ink-muted select-none">
+      <span class="font-semibold tracking-wider flex items-center gap-1 text-primary">
+        <span class="inline-block w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
+        Canteen Open
+      </span>
+      <span class="bg-primary-light/60 text-ink text-[11px] font-semibold px-2.5 py-0.5 rounded-full border border-primary/20">
+        Campus Edition
+      </span>
+    </header>
+
+    <!-- Hero Content Section -->
+    <section class="px-6 pt-4 pb-4 flex flex-col items-center text-center">
+
+      <!-- Brand Logo / Badge -->
+      <div class="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-primary-light border border-primary/20 text-primary-dark font-medium text-xs mb-3">
+        <span class="text-sm">⏱️</span>
+        <span>Zero Wait Time • Smart Pre-orders</span>
+      </div>
+
+      <h1 class="text-4xl font-extrabold text-ink tracking-tight leading-tight">
+        QueueBite
+      </h1>
+      <p class="text-ink-muted text-sm mt-1 max-w-[260px] font-medium">
+        Skip the lunch rush. Pre-order warm food & pick up right on time.
+      </p>
+
+      <!-- Visual Food Hero Illustration with Floating Elements -->
+      <div class="relative w-64 h-64 my-4 flex items-center justify-center">
+        <!-- Ambient Warm Glow -->
+        <div class="absolute inset-4 rounded-full bg-gradient-to-tr from-[#E9A23B]/30 to-[#8B5E3C]/20 blur-2xl glow-bg"></div>
+
+        <!-- Big Central Plate -->
+        <div class="relative z-10 w-44 h-44 rounded-full bg-white shadow-card flex items-center justify-center border-4 border-[#F1E6D8]">
+          <div class="w-36 h-36 rounded-full bg-gradient-to-b from-cream to-[#F3E7D9] flex items-center justify-center text-6xl shadow-inner select-none transition-transform hover:scale-105 duration-300">
+            🍛
+          </div>
+        </div>
+
+        <!-- Floating Chip 1: Quick Token -->
+        <div class="absolute top-2 left-0 z-20 float-badge bg-white/95 backdrop-blur-sm border border-primary/15 shadow-card rounded-2xl px-3 py-1.5 flex items-center gap-2 text-xs font-semibold text-ink">
+          <span class="w-6 h-6 rounded-lg bg-accent/20 flex items-center justify-center text-sm">🎟️</span>
+          <span>Token #QB-042</span>
+        </div>
+
+        <!-- Floating Chip 2: Warm & Fresh -->
+        <div class="absolute bottom-3 right-0 z-20 float-badge-delayed bg-white/95 backdrop-blur-sm border border-primary/15 shadow-card rounded-2xl px-3 py-1.5 flex items-center gap-2 text-xs font-semibold text-ink">
+          <span class="w-6 h-6 rounded-lg bg-emerald-100 text-emerald-800 flex items-center justify-center text-sm">✓</span>
+          <span>15-Min Slots</span>
+        </div>
+
+        <!-- Floating snack mini-reactions -->
+        <span class="absolute top-6 right-4 text-2xl select-none animate-bounce" style="animation-duration: 2.8s;">🥪</span>
+        <span class="absolute bottom-6 left-3 text-2xl select-none animate-bounce" style="animation-duration: 3.2s; animation-delay: 0.5s;">☕</span>
+      </div>
+
+      <!-- Quick Session Banner (Appears if already logged in) -->
+      <div id="sessionBanner" class="hidden w-full mb-2 p-2.5 rounded-2xl bg-primary-light/80 border border-primary/30 flex items-center justify-between text-left">
+        <div class="flex items-center gap-2.5 pl-1">
+          <span class="text-xl">👋</span>
+          <div>
+            <p class="text-xs font-bold text-ink" id="sessionUserName">Welcome back!</p>
+            <p class="text-[11px] text-ink-muted">You are already logged in</p>
+          </div>
+        </div>
+        <a id="sessionUserLink" href="menu.html" class="px-3 py-1 rounded-xl bg-primary text-white text-xs font-semibold hover:bg-primary-dark transition">
+          Continue →
+        </a>
+      </div>
+
+    </section>
+
+    <!-- 3-Step "How it works" Cards Section -->
+    <section class="bg-white/80 backdrop-blur-sm border-t border-[#EAE0D3] rounded-t-[32px] px-6 pt-5 pb-7 shadow-lg flex flex-col justify-end">
+      
+      <div class="flex items-center justify-between mb-3.5">
+        <h2 class="text-xs font-bold uppercase tracking-wider text-ink-muted">
+          How it works
+        </h2>
+        <span class="text-[11px] font-semibold text-primary bg-primary-light px-2 py-0.5 rounded-full">
+          3 simple steps
+        </span>
+      </div>
+
+      <!-- Step Cards Grid -->
+      <div class="grid grid-cols-3 gap-2.5">
+        <!-- Step 1 -->
+        <div class="bg-cream/70 rounded-2xl p-3 border border-primary/10 flex flex-col items-center text-center transition hover:-translate-y-0.5 hover:shadow-card">
+          <div class="w-10 h-10 rounded-xl bg-white shadow-sm flex items-center justify-center text-xl mb-1.5 border border-primary/10">
+            🛒
+          </div>
+          <span class="text-xs font-bold text-ink">1. Order</span>
+          <p class="text-[10px] text-ink-muted mt-0.5 leading-tight">Pick canteen snacks & meals</p>
+        </div>
+
+        <!-- Step 2 -->
+        <div class="bg-cream/70 rounded-2xl p-3 border border-primary/10 flex flex-col items-center text-center transition hover:-translate-y-0.5 hover:shadow-card">
+          <div class="w-10 h-10 rounded-xl bg-white shadow-sm flex items-center justify-center text-xl mb-1.5 border border-primary/10">
+            🎟️
+          </div>
+          <span class="text-xs font-bold text-ink">2. Get Token</span>
+          <p class="text-[10px] text-ink-muted mt-0.5 leading-tight">Pick a slot & get your QR</p>
+        </div>
+
+        <!-- Step 3 -->
+        <div class="bg-cream/70 rounded-2xl p-3 border border-primary/10 flex flex-col items-center text-center transition hover:-translate-y-0.5 hover:shadow-card">
+          <div class="w-10 h-10 rounded-xl bg-white shadow-sm flex items-center justify-center text-xl mb-1.5 border border-primary/10">
+            🍽️
+          </div>
+          <span class="text-xs font-bold text-ink">3. Pick Up</span>
+          <p class="text-[10px] text-ink-muted mt-0.5 leading-tight">Show QR, grab & go</p>
+        </div>
+      </div>
+
+      <!-- Action Buttons -->
+      <div class="mt-5 space-y-2.5">
+        <a href="login.html" 
+           class="w-full flex items-center justify-center gap-2 bg-primary hover:bg-primary-dark active:scale-[0.98] transition-all duration-200 text-white font-bold text-base py-3.5 px-6 rounded-2xl shadow-button">
+          <span>Get Started</span>
+          <span class="text-lg">→</span>
+        </a>
+
+        <div class="flex items-center justify-between text-xs text-ink-muted px-1 pt-1">
+          <span>Already registered?</span>
+          <a href="login.html" class="text-primary font-bold hover:underline">
+            Student / Staff Sign In
+          </a>
+        </div>
+      </div>
+
+    </section>
+
+  </main>
+
+  <!-- Storage script to check returning sessions -->
+  <script src="storage.js"></script>
+  <script>
+    // Check if user already logged in earlier
+    document.addEventListener('DOMContentLoaded', () => {
+      const user = getCurrentUser();
+      if (user) {
+        const banner = document.getElementById('sessionBanner');
+        const nameEl = document.getElementById('sessionUserName');
+        const linkEl = document.getElementById('sessionUserLink');
+        
+        if (banner && nameEl && linkEl) {
+          banner.classList.remove('hidden');
+          if (user.role === 'admin') {
+            nameEl.textContent = 'Logged in as Canteen Staff';
+            linkEl.href = 'admin.html';
+          } else {
+            nameEl.textContent = `Welcome back, ${user.name || 'Student'}!`;
+            linkEl.href = 'menu.html';
+          }
+        }
+      }
+    });
+  </script>
+
+</body>
+</html>

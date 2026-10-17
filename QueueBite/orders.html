@@ -1,0 +1,1697 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>QueueBite Admin – Orders Management</title>
+  <!-- Tailwind CSS via CDN for base utilities -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <!-- Storage Layer (QueueBite Data Storage) -->
+  <script src="storage.js"></script>
+  <!-- Plus Jakarta Sans Font (matching admin, overview & login) -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+
+  <style>
+    /* ========================================================================= */
+    /* THEME: "Cocoa and Cream" (Exact palette from admin.html & overview.html)  */
+    /* ========================================================================= */
+    :root {
+      --bg-page:        #FBF4E9;   /* main cream background */
+      --bg-panel:       #EFE3D3;   /* sidebar, filter bar, toggle tracks, chips */
+      --bg-card:        #FFFFFF;   /* cards, inputs, modal */
+      --bg-notice:      #FAE8D0;   /* info boxes, highlights, tag backgrounds */
+      --border-notice:  #F0C888;   /* border of info boxes */
+      --border-soft:    #E4D6C3;   /* normal card and input borders */
+      --text-dark:      #2F2118;   /* headings and main text */
+      --text-muted:     #6B5645;   /* labels, secondary text */
+      --text-placeholder: #B9AA9A; /* placeholder text */
+      --primary:        #8B5E3C;   /* main buttons, active sidebar item, focused input border */
+      --primary-hover:  #774D2F;   /* button hover */
+      --accent:         #E9A23B;   /* mustard: Bestseller / Special tags, small highlights */
+      --success:        #4F7A4A;   /* "Available" badge text and veg dot */
+      --success-bg:     #E3EFDC;
+      --danger:         #B3453A;   /* "Sold out" badge, delete button, non-veg dot */
+      --danger-bg:      #F7DEDA;
+      --neutral-bg:     #E4DDD3;   /* "Hidden" badge */
+    }
+
+    body {
+      font-family: 'Plus Jakarta Sans', sans-serif;
+      background-color: var(--bg-page);
+      color: var(--text-dark);
+    }
+
+    /* Modal Backdrop */
+    dialog::backdrop {
+      background: rgba(47, 33, 24, 0.45);
+      backdrop-filter: blur(3px);
+    }
+
+    /* Smooth dialog open animation */
+    dialog[open] {
+      animation: dialogZoom 0.2s ease-out forwards;
+    }
+
+    @keyframes dialogZoom {
+      from {
+        opacity: 0;
+        transform: scale(0.96) translateY(8px);
+      }
+      to {
+        opacity: 1;
+        transform: scale(1) translateY(0);
+      }
+    }
+
+    /* Input and Select focus styling: 2px primary border */
+    input:focus, select:focus, textarea:focus {
+      outline: none !important;
+      border-color: var(--primary) !important;
+      box-shadow: 0 0 0 2px rgba(139, 94, 60, 0.2) !important;
+    }
+
+    input::placeholder, textarea::placeholder {
+      color: var(--text-placeholder);
+    }
+
+    /* Primary buttons */
+    .btn-primary {
+      background-color: var(--primary);
+      color: #FFFFFF;
+      border-radius: 16px;
+      box-shadow: 0 6px 18px -2px rgba(139, 94, 60, 0.25);
+      transition: all 0.2s ease;
+    }
+    .btn-primary:hover {
+      background-color: var(--primary-hover);
+      box-shadow: 0 8px 22px -2px rgba(139, 94, 60, 0.35);
+    }
+    .btn-primary:active {
+      transform: scale(0.98);
+    }
+
+    /* Navigation item hover */
+    .nav-link:hover {
+      background-color: rgba(255, 255, 255, 0.6);
+      color: var(--text-dark);
+    }
+
+    /* Card styling */
+    .dashboard-card {
+      background-color: var(--bg-card);
+      border: 1px solid var(--border-soft);
+      border-radius: 16px;
+      box-shadow: 0 4px 20px -2px rgba(47, 33, 24, 0.05);
+      transition: all 0.2s ease;
+    }
+
+    /* Row highlight animation for newly received orders */
+    @keyframes newOrderGlow {
+      0% { background-color: var(--bg-notice); }
+      100% { background-color: transparent; }
+    }
+    .new-order-highlight {
+      animation: newOrderGlow 4s ease-out forwards;
+    }
+
+    /* Custom scrollbars */
+    .no-scrollbar::-webkit-scrollbar {
+      display: none;
+    }
+    .no-scrollbar {
+      -ms-overflow-style: none;
+      scrollbar-width: none;
+    }
+
+    /* Print styles */
+    @media print {
+      aside, header, #verifyBox, #bulkActionsBar, #orderTabs, #toolbarSection, #toastContainer, .no-print {
+        display: none !important;
+      }
+      body {
+        background-color: #FFFFFF !important;
+        color: #000000 !important;
+      }
+      main {
+        width: 100% !important;
+        padding: 0 !important;
+        margin: 0 !important;
+      }
+      .dashboard-card {
+        box-shadow: none !important;
+        border: 1px solid #CCCCCC !important;
+      }
+      table {
+        width: 100% !important;
+      }
+    }
+  </style>
+</head>
+
+<body class="min-h-screen flex flex-col md:flex-row antialiased">
+
+  <!-- ========================================================================= -->
+  <!-- SIDEBAR NAVIGATION (Exact match to admin.html and overview.html)          -->
+  <!-- ========================================================================= -->
+  <aside class="w-full md:w-64 border-b md:border-b-0 md:border-r flex-shrink-0 z-30 flex flex-col no-print"
+         style="background-color: var(--bg-panel); border-color: var(--border-soft);">
+    
+    <!-- Brand Header -->
+    <div class="p-4 md:p-6 border-b flex items-center justify-between" style="border-color: var(--border-soft);">
+      <div class="flex items-center gap-3">
+        <div class="w-10 h-10 rounded-2xl flex items-center justify-center text-white text-xl shadow-md"
+             style="background-color: var(--primary); box-shadow: 0 4px 14px rgba(139, 94, 60, 0.3);">
+          🍛
+        </div>
+        <div>
+          <h1 class="font-extrabold text-lg leading-tight" style="color: var(--text-dark);">QueueBite</h1>
+          <p class="text-xs font-bold" style="color: var(--primary);">Staff Admin Portal</p>
+        </div>
+      </div>
+      <span class="inline-flex md:hidden text-xs font-bold px-2.5 py-0.5 rounded-full"
+            style="background-color: var(--bg-notice); color: var(--text-dark); border: 1px solid var(--border-notice);">
+        Canteen
+      </span>
+    </div>
+
+    <!-- Navigation Links -->
+    <nav class="p-3 md:p-4 flex md:flex-col gap-1.5 overflow-x-auto no-scrollbar whitespace-nowrap md:overflow-visible">
+      <!-- Overview Link -->
+      <a href="overview.html" 
+         class="nav-link flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-sm font-semibold transition"
+         style="color: var(--text-muted);">
+        <span class="text-base">📊</span>
+        <span>Overview</span>
+      </a>
+
+      <!-- Orders Link (ACTIVE: white pill with dark text) -->
+      <a href="orders.html" 
+         class="flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-sm font-bold shadow-sm transition"
+         style="background-color: var(--bg-card); color: var(--text-dark); box-shadow: 0 2px 8px rgba(47, 33, 24, 0.08);"
+         aria-current="page">
+        <span class="text-base">🧾</span>
+        <span>Orders</span>
+      </a>
+
+      <!-- Queue Link -->
+      <a href="queue.html" 
+         class="nav-link flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-sm font-semibold transition"
+         style="color: var(--text-muted);">
+        <span class="text-base">⏱️</span>
+        <span>Queue</span>
+      </a>
+
+      <!-- Menu Link -->
+      <a href="admin.html" 
+         class="nav-link flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-sm font-semibold transition"
+         style="color: var(--text-muted);">
+        <span class="text-base">🍽️</span>
+        <span>Menu</span>
+      </a>
+
+      <!-- Slots Link -->
+      <a href="slots.html" 
+         class="nav-link flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-sm font-semibold transition"
+         style="color: var(--text-muted);">
+        <span class="text-base">🕒</span>
+        <span>Slots</span>
+      </a>
+
+      <!-- Logout Link -->
+      <a href="login.html" 
+         onclick="handleLogout(event)"
+         class="flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-sm font-bold md:mt-auto transition hover:opacity-85"
+         style="color: var(--danger);">
+        <span class="text-base">🚪</span>
+        <span>Logout</span>
+      </a>
+    </nav>
+
+    <!-- Sidebar Footer -->
+    <div class="hidden md:block p-4 mt-auto border-t" style="background-color: var(--bg-notice); border-color: var(--border-soft);">
+      <div class="text-xs">
+        <p class="font-bold" style="color: var(--text-dark);">Canteen Manager</p>
+        <p class="text-[11px] mt-0.5" style="color: var(--text-muted);">Live Orders Fulfillment</p>
+      </div>
+    </div>
+  </aside>
+
+  <!-- ========================================================================= -->
+  <!-- MAIN WORKSPACE                                                            -->
+  <!-- ========================================================================= -->
+  <main class="flex-1 flex flex-col min-w-0 overflow-y-auto">
+
+    <!-- Top Sticky Header -->
+    <header class="border-b px-4 md:px-8 py-5 sticky top-0 z-20 no-print"
+            style="background-color: var(--bg-page); border-color: var(--border-soft);">
+      <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+        <div>
+          <div class="flex items-center gap-2">
+            <h2 class="text-2xl font-extrabold tracking-tight" style="color: var(--text-dark);">Orders Management</h2>
+            <span id="currentDateBadge" class="text-xs font-bold px-2.5 py-0.5 rounded-full"
+                  style="background-color: var(--bg-panel); color: var(--text-muted); border: 1px solid var(--border-soft);">
+              Today
+            </span>
+          </div>
+          <p class="text-sm mt-0.5" style="color: var(--text-muted);">
+            Live pre-orders, kitchen status updates, and digital token verification
+          </p>
+        </div>
+
+        <!-- Canteen Status Indicator (Synchronized via storage.js) -->
+        <div class="flex items-center gap-2 px-3.5 py-2 rounded-2xl border shadow-sm self-start sm:self-center"
+             style="background-color: var(--bg-card); border-color: var(--border-soft);">
+          <span id="canteenStatusDot" class="w-2.5 h-2.5 rounded-full" style="background-color: var(--success);"></span>
+          <span id="canteenStatusText" class="text-xs font-bold" style="color: var(--text-dark);">Canteen Open</span>
+        </div>
+      </div>
+    </header>
+
+    <!-- Content Body -->
+    <div class="p-4 md:p-8 space-y-6">
+
+      <!-- ===================================================================== -->
+      <!-- 1. VERIFY PICKUP BOX (Quick Token Verification)                       -->
+      <!-- ===================================================================== -->
+      <section id="verifyBox" class="dashboard-card p-5 no-print" aria-label="Token Verification">
+        <div class="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
+          <div>
+            <div class="flex items-center gap-2">
+              <span class="text-lg">🎟️</span>
+              <h3 class="text-base font-extrabold" style="color: var(--text-dark);">Verify Student Pickup Token</h3>
+            </div>
+            <p class="text-xs mt-0.5" style="color: var(--text-muted);">
+              Enter the student's digital token number (e.g. <span class="font-bold">#042</span> or <span class="font-bold">042</span>) to confirm collection
+            </p>
+          </div>
+
+          <!-- Token Input Form -->
+          <form onsubmit="handleTokenVerify(event)" class="flex items-center gap-2 w-full lg:w-auto">
+            <div class="relative flex-1 sm:w-56">
+              <input type="text" 
+                     id="verifyTokenInput" 
+                     placeholder="Enter Token (e.g. #042)" 
+                     class="w-full rounded-xl pl-3.5 pr-3 py-2.5 text-sm font-bold uppercase transition"
+                     style="background-color: var(--bg-card); border: 1px solid var(--border-soft); color: var(--text-dark);" />
+            </div>
+            <button type="submit" 
+                    class="btn-primary text-xs font-bold px-4 py-2.5 whitespace-nowrap shadow-sm">
+              Verify
+            </button>
+          </form>
+        </div>
+
+        <!-- Verification Result Banner Container -->
+        <div id="verifyResultContainer" class="hidden mt-4">
+          <!-- Rendered dynamically via verifyToken() -->
+        </div>
+      </section>
+
+      <!-- ===================================================================== -->
+      <!-- 2. STATUS TABS WITH LIVE COUNTERS                                     -->
+      <!-- ===================================================================== -->
+      <nav id="orderTabs" class="flex gap-2 overflow-x-auto no-scrollbar whitespace-nowrap pb-1 no-print" aria-label="Order Status Filter Tabs">
+        <!-- Rendered dynamically via renderTabs() -->
+      </nav>
+
+      <!-- ===================================================================== -->
+      <!-- 3. TOOLBAR: Search, Slot Filter, Payment Filter, Sort, Actions        -->
+      <!-- ===================================================================== -->
+      <section id="toolbarSection" class="p-4 rounded-2xl border shadow-sm space-y-3.5 no-print"
+               style="background-color: var(--bg-panel); border-color: var(--border-soft);"
+               aria-label="Order Filters">
+        <div class="grid grid-cols-1 md:grid-cols-12 gap-3 items-center">
+          
+          <!-- Search Box -->
+          <div class="md:col-span-4 relative">
+            <span class="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-base" style="color: var(--text-muted);">
+              🔍
+            </span>
+            <input type="text" 
+                   id="searchInput" 
+                   oninput="renderTable()" 
+                   placeholder="Search token, name, or ID..." 
+                   class="w-full rounded-xl pl-10 pr-9 py-2.5 text-sm transition"
+                   style="background-color: var(--bg-card); border: 1px solid var(--border-soft); color: var(--text-dark);" />
+            <button type="button" 
+                    id="clearSearchBtn" 
+                    onclick="clearSearch()" 
+                    class="hidden absolute inset-y-0 right-0 pr-3 flex items-center hover:opacity-75"
+                    style="color: var(--text-muted);"
+                    title="Clear search">
+              ✕
+            </button>
+          </div>
+
+          <!-- Slot Time Filter -->
+          <div class="md:col-span-3">
+            <select id="slotFilter" 
+                    onchange="renderTable()" 
+                    class="w-full rounded-xl px-3.5 py-2.5 text-sm font-semibold transition"
+                    style="background-color: var(--bg-card); border: 1px solid var(--border-soft); color: var(--text-dark);">
+              <option value="All">All Slots</option>
+              <!-- Populated dynamically via JS -->
+            </select>
+          </div>
+
+          <!-- Payment Filter -->
+          <div class="md:col-span-2">
+            <select id="paymentFilter" 
+                    onchange="renderTable()" 
+                    class="w-full rounded-xl px-3 py-2.5 text-sm font-semibold transition"
+                    style="background-color: var(--bg-card); border: 1px solid var(--border-soft); color: var(--text-dark);">
+              <option value="All">All Payments</option>
+              <option value="Paid">Paid</option>
+              <option value="Pending">Pending</option>
+              <option value="Failed">Failed</option>
+              <option value="Refunded">Refunded</option>
+            </select>
+          </div>
+
+          <!-- Sort Dropdown -->
+          <div class="md:col-span-3">
+            <select id="sortOption" 
+                    onchange="renderTable()" 
+                    class="w-full rounded-xl px-3 py-2.5 text-sm font-semibold transition"
+                    style="background-color: var(--bg-card); border: 1px solid var(--border-soft); color: var(--text-dark);">
+              <option value="slot_asc">Sort: Slot Time (Earliest first)</option>
+              <option value="created_desc">Sort: Newest First</option>
+              <option value="amount_desc">Sort: Highest Amount</option>
+            </select>
+          </div>
+
+        </div>
+
+        <!-- Action Buttons Row -->
+        <div class="pt-2.5 border-t flex flex-wrap items-center justify-between gap-2.5"
+             style="border-color: var(--border-soft);">
+          <p id="tableResultsCount" class="text-xs font-bold" style="color: var(--text-muted);">
+            Showing all orders
+          </p>
+
+          <div class="flex items-center gap-2">
+            <button type="button" 
+                    onclick="loadOrders(); showToast('Orders refreshed', 'info');" 
+                    class="font-bold text-xs px-3.5 py-2 rounded-xl transition hover:opacity-90 active:scale-95 shadow-sm inline-flex items-center gap-1.5"
+                    style="background-color: var(--bg-card); color: var(--primary); border: 1px solid var(--border-soft);">
+              <span>🔄</span> <span>Refresh</span>
+            </button>
+            <button type="button" 
+                    onclick="exportCsv()" 
+                    class="font-bold text-xs px-3.5 py-2 rounded-xl transition hover:opacity-90 active:scale-95 shadow-sm inline-flex items-center gap-1.5"
+                    style="background-color: var(--bg-card); color: var(--text-dark); border: 1px solid var(--border-soft);">
+              <span>📥</span> <span>Export CSV</span>
+            </button>
+            <button type="button" 
+                    onclick="window.print()" 
+                    class="font-bold text-xs px-3.5 py-2 rounded-xl transition hover:opacity-90 active:scale-95 shadow-sm inline-flex items-center gap-1.5"
+                    style="background-color: var(--bg-card); color: var(--text-dark); border: 1px solid var(--border-soft);">
+              <span>🖨️</span> <span>Print List</span>
+            </button>
+          </div>
+        </div>
+      </section>
+
+      <!-- ===================================================================== -->
+      <!-- 4. BULK ACTIONS BAR (Appears when >= 1 checkbox checked)               -->
+      <!-- ===================================================================== -->
+      <section id="bulkActionsBar" class="hidden p-3.5 rounded-2xl border shadow-md flex flex-wrap items-center justify-between gap-3 no-print"
+               style="background-color: var(--bg-notice); border-color: var(--border-notice);">
+        <div class="flex items-center gap-2.5">
+          <span class="text-sm font-extrabold" style="color: var(--text-dark);" id="selectedCountText">0 orders selected</span>
+          <span class="text-xs" style="color: var(--text-muted);">&bull; Bulk status actions:</span>
+        </div>
+        <div class="flex items-center gap-2">
+          <button type="button" 
+                  onclick="bulkUpdate('Preparing')" 
+                  class="btn-primary text-xs font-bold px-3 py-1.5 shadow-sm">
+            Mark selected as Preparing
+          </button>
+          <button type="button" 
+                  onclick="bulkUpdate('Ready')" 
+                  class="text-xs font-bold px-3 py-1.5 rounded-xl border shadow-sm transition hover:opacity-85 text-white"
+                  style="background-color: var(--success); border-color: var(--success);">
+            Mark selected as Ready
+          </button>
+          <button type="button" 
+                  onclick="clearSelection()" 
+                  class="text-xs font-bold px-3 py-1.5 rounded-xl border transition hover:opacity-85"
+                  style="background-color: var(--bg-card); color: var(--text-dark); border-color: var(--border-soft);">
+            Clear selection
+          </button>
+        </div>
+      </section>
+
+      <!-- ===================================================================== -->
+      <!-- 5. ORDERS TABLE (Desktop/Tablet) & CARDS (Mobile)                     -->
+      <!-- ===================================================================== -->
+      <section class="dashboard-card overflow-hidden" aria-label="Orders List">
+        
+        <!-- Desktop / Tablet Table View (hidden on small mobile) -->
+        <div class="hidden md:block overflow-x-auto">
+          <table class="w-full text-left text-xs border-collapse">
+            <thead>
+              <tr class="border-b font-extrabold uppercase tracking-wider"
+                  style="background-color: var(--bg-panel); border-color: var(--border-soft); color: var(--text-muted);">
+                <th class="p-3.5 w-10 text-center no-print">
+                  <input type="checkbox" id="selectAllCheckbox" onchange="toggleSelectAll(this.checked)" class="rounded w-4 h-4 cursor-pointer" style="accent-color: var(--primary);">
+                </th>
+                <th class="p-3.5">Token</th>
+                <th class="p-3.5">Student</th>
+                <th class="p-3.5">Items Ordered</th>
+                <th class="p-3.5">Slot Time</th>
+                <th class="p-3.5">Total</th>
+                <th class="p-3.5">Payment</th>
+                <th class="p-3.5">Status</th>
+                <th class="p-3.5 text-right no-print">Actions</th>
+              </tr>
+            </thead>
+            <tbody id="ordersTableBody" class="divide-y font-medium" style="border-color: var(--border-soft);">
+              <!-- Rendered dynamically via renderTable() -->
+            </tbody>
+          </table>
+        </div>
+
+        <!-- Mobile Cards List View (Shown on small screens) -->
+        <div id="mobileOrdersList" class="md:hidden divide-y" style="border-color: var(--border-soft);">
+          <!-- Rendered dynamically via renderTable() -->
+        </div>
+
+        <!-- Empty State Container -->
+        <div id="emptyOrdersState" class="hidden p-12 text-center">
+          <div class="w-16 h-16 rounded-2xl flex items-center justify-center text-3xl mx-auto mb-3.5 shadow-sm"
+               style="background-color: var(--bg-notice); color: var(--primary);">
+            🧾
+          </div>
+          <h4 id="emptyStateTitle" class="text-base font-extrabold" style="color: var(--text-dark);">No orders match your filters</h4>
+          <p id="emptyStateMessage" class="text-xs mt-1 max-w-sm mx-auto" style="color: var(--text-muted);">
+            Try clearing filters or search queries to view all incoming student orders.
+          </p>
+          <button type="button" 
+                  id="emptyStateActionBtn" 
+                  onclick="resetAllFilters()" 
+                  class="mt-4 btn-primary text-xs font-bold px-4 py-2.5">
+            Clear Filters
+          </button>
+        </div>
+
+      </section>
+
+    </div>
+  </main>
+
+  <!-- ========================================================================= -->
+  <!-- ORDER DETAILS MODAL (<dialog>)                                            -->
+  <!-- ========================================================================= -->
+  <dialog id="orderDetailsModal" class="p-0 border-0 shadow-2xl w-full max-w-lg m-auto overflow-hidden"
+          style="background-color: var(--bg-card); border: 1px solid var(--border-soft); border-radius: 24px; box-shadow: 0 20px 45px rgba(47, 33, 24, 0.25);">
+    
+    <!-- Modal Header -->
+    <div class="px-6 py-4 border-b flex items-center justify-between"
+         style="background-color: var(--bg-panel); border-color: var(--border-soft);">
+      <div class="flex items-center gap-2.5">
+        <span class="w-9 h-9 rounded-xl flex items-center justify-center text-base font-extrabold shadow-sm"
+              style="background-color: var(--bg-notice); color: var(--primary);" id="detailTokenHeader">
+          #000
+        </span>
+        <div>
+          <h3 class="text-base font-extrabold leading-tight" style="color: var(--text-dark);">Order Details</h3>
+          <p class="text-[11px]" style="color: var(--text-muted);" id="detailOrderIdSub">ORD-000</p>
+        </div>
+      </div>
+      <button type="button" 
+              onclick="closeDetailsModal()" 
+              class="text-xl font-bold p-1 rounded-lg hover:opacity-75 focus:outline-none"
+              style="color: var(--text-muted);"
+              aria-label="Close dialog">
+        ✕
+      </button>
+    </div>
+
+    <!-- Modal Content -->
+    <div class="p-6 space-y-4.5 max-h-[75vh] overflow-y-auto text-xs">
+      
+      <!-- Student & Slot Info Box -->
+      <div class="p-3.5 rounded-2xl border grid grid-cols-2 gap-3"
+           style="background-color: var(--bg-notice); border-color: var(--border-notice);">
+        <div>
+          <p class="font-bold uppercase tracking-wider text-[10px]" style="color: var(--text-muted);">Student Name</p>
+          <p id="detailStudentName" class="text-sm font-extrabold mt-0.5" style="color: var(--text-dark);">-</p>
+          <p id="detailCollegeId" class="text-[11px]" style="color: var(--text-muted);">-</p>
+        </div>
+        <div>
+          <p class="font-bold uppercase tracking-wider text-[10px]" style="color: var(--text-muted);">Pickup Slot</p>
+          <p id="detailSlotTime" class="text-sm font-extrabold mt-0.5" style="color: var(--text-dark);">-</p>
+          <p id="detailStudentPhone" class="text-[11px]" style="color: var(--text-muted);">📞 -</p>
+        </div>
+      </div>
+
+      <!-- Items Ordered Table -->
+      <div>
+        <p class="font-extrabold uppercase tracking-wider text-[11px] mb-2" style="color: var(--text-dark);">Items Ordered</p>
+        <div class="rounded-xl border overflow-hidden" style="border-color: var(--border-soft);">
+          <table class="w-full text-left">
+            <thead class="border-b text-[10px] uppercase font-bold" style="background-color: var(--bg-panel); border-color: var(--border-soft); color: var(--text-muted);">
+              <tr>
+                <th class="p-2.5">Item</th>
+                <th class="p-2.5 text-center">Qty</th>
+                <th class="p-2.5 text-right">Price</th>
+                <th class="p-2.5 text-right">Subtotal</th>
+              </tr>
+            </thead>
+            <tbody id="detailItemsTableBody" class="divide-y" style="border-color: var(--border-soft);">
+              <!-- Rendered dynamically -->
+            </tbody>
+            <tfoot class="border-t font-extrabold" style="background-color: var(--bg-panel); border-color: var(--border-soft);">
+              <tr>
+                <td colspan="3" class="p-2.5 text-right">Total Amount:</td>
+                <td id="detailTotalAmount" class="p-2.5 text-right text-sm" style="color: var(--text-dark);">₹0</td>
+              </tr>
+            </tfoot>
+          </table>
+        </div>
+      </div>
+
+      <!-- Payment & Note Info -->
+      <div class="grid grid-cols-2 gap-3 p-3 rounded-2xl border"
+           style="background-color: var(--bg-panel); border-color: var(--border-soft);">
+        <div>
+          <p class="text-[10px] font-bold uppercase tracking-wider" style="color: var(--text-muted);">Payment Info</p>
+          <div class="mt-1 flex items-center gap-1.5" id="detailPaymentBadge">
+            <!-- Badge -->
+          </div>
+          <p id="detailPaymentMethod" class="text-[11px] mt-1 font-semibold" style="color: var(--text-dark);">UPI</p>
+        </div>
+        <div>
+          <p class="text-[10px] font-bold uppercase tracking-wider" style="color: var(--text-muted);">Order Note / Special Request</p>
+          <p id="detailOrderNote" class="text-[11px] mt-1 italic" style="color: var(--text-muted);">None</p>
+        </div>
+      </div>
+
+      <!-- Order Status Timeline -->
+      <div>
+        <p class="font-extrabold uppercase tracking-wider text-[11px] mb-2" style="color: var(--text-dark);">Fulfillment Progress</p>
+        <div id="detailTimelineContainer" class="flex items-center justify-between p-3 rounded-2xl border"
+             style="background-color: var(--bg-card); border-color: var(--border-soft);">
+          <!-- Rendered dynamically -->
+        </div>
+      </div>
+
+    </div>
+
+    <!-- Modal Footer Actions -->
+    <div class="px-6 py-4 border-t flex flex-wrap items-center justify-between gap-3"
+         style="background-color: var(--bg-panel); border-color: var(--border-soft);">
+      <button type="button" 
+              onclick="closeDetailsModal()" 
+              class="font-bold text-xs px-4 py-2 rounded-xl transition hover:opacity-85"
+              style="background-color: var(--bg-card); color: var(--text-muted); border: 1px solid var(--border-soft);">
+        Close
+      </button>
+
+      <div class="flex items-center gap-2" id="detailModalActionButtons">
+        <!-- Next step button or Mark paid rendered dynamically -->
+      </div>
+    </div>
+  </dialog>
+
+  <!-- ========================================================================= -->
+  <!-- CANCEL ORDER MODAL (<dialog>)                                             -->
+  <!-- ========================================================================= -->
+  <dialog id="cancelOrderModal" class="p-0 border-0 shadow-2xl w-full max-w-md m-auto overflow-hidden"
+          style="background-color: var(--bg-card); border: 1px solid var(--border-soft); border-radius: 24px; box-shadow: 0 20px 45px rgba(47, 33, 24, 0.25);">
+    <div class="px-6 py-4 border-b flex items-center justify-between"
+         style="background-color: var(--danger-bg); border-color: var(--danger);">
+      <div class="flex items-center gap-2">
+        <span class="text-base">⚠️</span>
+        <h3 class="text-base font-extrabold" style="color: var(--danger);">Cancel Order</h3>
+      </div>
+      <button type="button" onclick="closeCancelModal()" class="text-lg font-bold text-gray-500 hover:text-black">✕</button>
+    </div>
+
+    <form id="cancelOrderForm" onsubmit="handleCancelSubmit(event)" class="p-6 space-y-4 text-xs">
+      <input type="hidden" id="cancelOrderId" />
+      <p id="cancelOrderPromptText" class="font-medium" style="color: var(--text-dark);">
+        Are you sure you want to cancel this order? This will free up the student's slot reservation and mark the order as Cancelled.
+      </p>
+
+      <div>
+        <label for="cancelReasonSelect" class="block font-bold uppercase tracking-wider text-[11px] mb-1.5" style="color: var(--text-muted);">
+          Reason for Cancellation:
+        </label>
+        <select id="cancelReasonSelect" 
+                class="w-full rounded-xl px-3.5 py-2.5 text-xs font-semibold"
+                style="background-color: var(--bg-card); border: 1px solid var(--border-soft); color: var(--text-dark);">
+          <option value="Item unavailable">Item unavailable</option>
+          <option value="Student request">Student request</option>
+          <option value="Canteen closed">Canteen closed</option>
+          <option value="Other">Other</option>
+        </select>
+      </div>
+
+      <div>
+        <label for="cancelNoteInput" class="block font-bold uppercase tracking-wider text-[11px] mb-1.5" style="color: var(--text-muted);">
+          Optional Note:
+        </label>
+        <input type="text" id="cancelNoteInput" 
+               placeholder="e.g. Out of ingredients, student contacted canteen"
+               class="w-full rounded-xl px-3.5 py-2.5 text-xs font-semibold"
+               style="background-color: var(--bg-card); border: 1px solid var(--border-soft); color: var(--text-dark);">
+      </div>
+
+      <div class="pt-3 border-t flex items-center justify-end gap-2.5" style="border-color: var(--border-soft);">
+        <button type="button" 
+                onclick="closeCancelModal()" 
+                class="font-bold text-xs px-4 py-2 rounded-xl transition hover:opacity-85"
+                style="background-color: var(--bg-panel); color: var(--text-muted); border: 1px solid var(--border-soft);">
+          Keep Order
+        </button>
+        <button type="submit" 
+                class="font-bold text-xs px-4 py-2 rounded-xl text-white shadow-sm transition hover:opacity-90"
+                style="background-color: var(--danger);">
+          Confirm Cancellation
+        </button>
+      </div>
+    </form>
+  </dialog>
+
+  <!-- ========================================================================= -->
+  <!-- FLOATING TOAST NOTIFICATION CONTAINER                                     -->
+  <!-- ========================================================================= -->
+  <div id="toastContainer" class="fixed bottom-5 right-5 z-50 flex flex-col gap-2 pointer-events-none no-print" aria-live="polite"></div>
+
+  <!-- ========================================================================= -->
+  <!-- JAVASCRIPT: DATA MANAGEMENT & REAL-TIME ORDERS TABLE LOGIC                -->
+  <!-- ========================================================================= -->
+  <script>
+    // Global in-memory state
+    let allOrders = [];
+    let currentStatusTab = 'All';
+    let selectedOrderIds = new Set();
+    let knownOrdersCount = 0;
+
+    // -------------------------------------------------------------------------
+    // 1. DATA ACCESS & INITIALIZATION (storage.js integration)
+    // -------------------------------------------------------------------------
+
+    async function loadOrders() {
+      try {
+        allOrders = await getOrders();
+        knownOrdersCount = allOrders.length;
+        await updateHeaderStatus();
+        await populateSlotFilter();
+        renderTabs();
+        renderTable();
+      } catch (err) {
+        console.error('Failed to load orders:', err);
+        showToast('Error loading orders', 'error');
+      }
+    }
+
+    async function updateHeaderStatus() {
+      const now = new Date();
+      document.getElementById('currentDateBadge').textContent = now.toLocaleDateString('en-US', { weekday: 'short', day: 'numeric', month: 'short' });
+
+      const isOpen = await isCanteenOpen();
+      const dot = document.getElementById('canteenStatusDot');
+      const text = document.getElementById('canteenStatusText');
+
+      if (isOpen) {
+        dot.style.backgroundColor = 'var(--success)';
+        text.textContent = 'Canteen Open';
+        text.style.color = 'var(--text-dark)';
+      } else {
+        dot.style.backgroundColor = 'var(--danger)';
+        text.textContent = 'Canteen Closed';
+        text.style.color = 'var(--danger)';
+      }
+    }
+
+    async function populateSlotFilter() {
+      const select = document.getElementById('slotFilter');
+      const currentVal = select.value;
+
+      // Extract unique slot times from orders and configured slots
+      let configuredSlotLabels = [];
+      try {
+        const slots = await getSlots();
+        configuredSlotLabels = (slots || []).map(s => {
+          return typeof formatSlotTime12 === 'function' ? formatSlotTime12(s.start) : (s.time || s.start);
+        }).filter(Boolean);
+      } catch (e) {}
+
+      const orderSlotLabels = allOrders.map(o => o.slotTime).filter(Boolean);
+      const uniqueSlots = Array.from(new Set([...orderSlotLabels, ...configuredSlotLabels]));
+      
+      select.innerHTML = '<option value="All">All Slots</option>';
+      uniqueSlots.forEach(slot => {
+        const opt = document.createElement('option');
+        opt.value = slot;
+        opt.textContent = slot;
+        select.appendChild(opt);
+      });
+
+      if (uniqueSlots.includes(currentVal)) {
+        select.value = currentVal;
+      }
+    }
+
+    // -------------------------------------------------------------------------
+    // 3. STATUS TABS RENDERING
+    // -------------------------------------------------------------------------
+    function renderTabs() {
+      const tabsNav = document.getElementById('orderTabs');
+      const statuses = ['All', 'Placed', 'Preparing', 'Ready', 'Collected', 'Cancelled', 'Missed'];
+
+      tabsNav.innerHTML = statuses.map(st => {
+        const count = st === 'All' ? allOrders.length : allOrders.filter(o => o.orderStatus === st).length;
+        const isActive = currentStatusTab === st;
+
+        let activeStyle = '';
+        if (isActive) {
+          activeStyle = 'background-color: var(--primary); color: #FFFFFF; font-weight: 800; shadow-sm';
+        } else {
+          activeStyle = 'background-color: var(--bg-card); color: var(--text-muted); border: 1px solid var(--border-soft); font-weight: 600;';
+        }
+
+        return `
+          <button type="button" 
+                  onclick="switchTab('${st}')" 
+                  class="px-4 py-2 rounded-xl text-xs transition hover:opacity-90 flex items-center gap-1.5"
+                  style="${activeStyle}">
+            <span>${st}</span>
+            <span class="text-[10px] px-1.5 py-0.2 rounded-full ${isActive ? 'bg-white/20 text-white' : 'bg-gray-100 text-gray-700 font-bold'}">${count}</span>
+          </button>
+        `;
+      }).join('');
+    }
+
+    function switchTab(status) {
+      currentStatusTab = status;
+      renderTabs();
+      renderTable();
+    }
+
+    // -------------------------------------------------------------------------
+    // 4. BADGE RENDERING HELPERS
+    // -------------------------------------------------------------------------
+    function getOrderStatusBadge(status) {
+      if (status === 'Placed') {
+        return `<span class="px-2.5 py-0.5 rounded-full text-[11px] font-bold" style="background-color: var(--accent); color: var(--text-dark);">Placed</span>`;
+      } else if (status === 'Preparing') {
+        return `<span class="px-2.5 py-0.5 rounded-full text-[11px] font-bold text-white" style="background-color: var(--primary);">Preparing</span>`;
+      } else if (status === 'Ready') {
+        return `<span class="px-2.5 py-0.5 rounded-full text-[11px] font-bold" style="background-color: var(--success-bg); color: var(--success); border: 1px solid var(--success);">Ready</span>`;
+      } else if (status === 'Collected') {
+        return `<span class="px-2.5 py-0.5 rounded-full text-[11px] font-bold" style="background-color: var(--neutral-bg); color: var(--text-muted); border: 1px solid var(--border-soft);">Collected</span>`;
+      } else {
+        return `<span class="px-2.5 py-0.5 rounded-full text-[11px] font-bold" style="background-color: var(--danger-bg); color: var(--danger); border: 1px solid var(--danger);">${status}</span>`;
+      }
+    }
+
+    function getPaymentStatusBadge(status) {
+      if (status === 'Paid') {
+        return `<span class="px-2 py-0.5 rounded-md text-[10px] font-extrabold" style="background-color: var(--success-bg); color: var(--success); border: 1px solid var(--success);">Paid</span>`;
+      } else if (status === 'Pending') {
+        return `<span class="px-2 py-0.5 rounded-md text-[10px] font-extrabold" style="background-color: var(--bg-notice); color: var(--accent); border: 1px solid var(--border-notice);">Pending</span>`;
+      } else if (status === 'Refunded') {
+        return `<span class="px-2 py-0.5 rounded-md text-[10px] font-extrabold" style="background-color: var(--neutral-bg); color: var(--text-muted); border: 1px solid var(--border-soft);">Refunded</span>`;
+      } else {
+        return `<span class="px-2 py-0.5 rounded-md text-[10px] font-extrabold" style="background-color: var(--danger-bg); color: var(--danger); border: 1px solid var(--danger);">${status}</span>`;
+      }
+    }
+
+    // -------------------------------------------------------------------------
+    // 5. TABLE & MOBILE CARDS RENDERING
+    // -------------------------------------------------------------------------
+    function renderTable() {
+      const searchVal = document.getElementById('searchInput').value.trim().toLowerCase();
+      const slotVal = document.getElementById('slotFilter').value;
+      const paymentVal = document.getElementById('paymentFilter').value;
+      const sortVal = document.getElementById('sortOption').value;
+
+      // Toggle search clear button
+      const clearBtn = document.getElementById('clearSearchBtn');
+      if (searchVal) clearBtn.classList.remove('hidden');
+      else clearBtn.classList.add('hidden');
+
+      // Filter logic
+      let filtered = allOrders.filter(order => {
+        // Tab filter
+        if (currentStatusTab !== 'All' && order.orderStatus !== currentStatusTab) return false;
+
+        // Search box filter (Token, Name, College ID)
+        if (searchVal) {
+          const matchToken = (order.token || '').toLowerCase().includes(searchVal);
+          const matchName = (order.studentName || '').toLowerCase().includes(searchVal);
+          const matchId = (order.collegeId || '').toLowerCase().includes(searchVal);
+          if (!matchToken && !matchName && !matchId) return false;
+        }
+
+        // Slot filter
+        if (slotVal !== 'All' && order.slotTime !== slotVal) return false;
+
+        // Payment filter
+        if (paymentVal !== 'All' && order.paymentStatus !== paymentVal) return false;
+
+        return true;
+      });
+
+      // Sort logic
+      filtered.sort((a, b) => {
+        if (sortVal === 'slot_asc') {
+          return (a.slotTime || '').localeCompare(b.slotTime || '');
+        } else if (sortVal === 'created_desc') {
+          return new Date(b.createdAt) - new Date(a.createdAt);
+        } else if (sortVal === 'amount_desc') {
+          return (Number(b.total) || 0) - (Number(a.total) || 0);
+        }
+        return 0;
+      });
+
+      const tableBody = document.getElementById('ordersTableBody');
+      const mobileList = document.getElementById('mobileOrdersList');
+      const emptyState = document.getElementById('emptyOrdersState');
+      const resultsCountEl = document.getElementById('tableResultsCount');
+
+      resultsCountEl.textContent = `Showing ${filtered.length} of ${allOrders.length} orders`;
+
+      if (filtered.length === 0) {
+        tableBody.innerHTML = '';
+        mobileList.innerHTML = '';
+        emptyState.classList.remove('hidden');
+        if (allOrders.length === 0) {
+          document.getElementById('emptyStateTitle').textContent = 'No orders yet today';
+          document.getElementById('emptyStateMessage').textContent = 'New orders will appear here as students place them.';
+          document.getElementById('emptyStateActionBtn').classList.add('hidden');
+        } else {
+          document.getElementById('emptyStateTitle').textContent = 'No orders match your filters';
+          document.getElementById('emptyStateMessage').textContent = 'Clear filters or search queries to view all incoming student orders.';
+          document.getElementById('emptyStateActionBtn').classList.remove('hidden');
+        }
+        return;
+      }
+
+      emptyState.classList.add('hidden');
+
+      // DESKTOP TABLE ROWS
+      tableBody.innerHTML = filtered.map(order => {
+        const isSelected = selectedOrderIds.has(order.id);
+        const itemsSummary = (order.items || []).map(i => `${i.qty}x ${i.name}`).join(', ');
+
+        // Next forward action button
+        let primaryBtnHtml = '';
+        if (order.orderStatus === 'Placed') {
+          primaryBtnHtml = `
+            <button type="button" onclick="advanceStatus('${order.id}', 'Preparing')" 
+                    class="btn-primary text-[11px] font-bold px-2.5 py-1.5 shadow-xs whitespace-nowrap">
+              Start preparing
+            </button>
+          `;
+        } else if (order.orderStatus === 'Preparing') {
+          primaryBtnHtml = `
+            <button type="button" onclick="advanceStatus('${order.id}', 'Ready')" 
+                    class="text-[11px] font-bold px-2.5 py-1.5 rounded-xl shadow-xs whitespace-nowrap text-white hover:opacity-90 transition"
+                    style="background-color: var(--success);">
+              Mark ready
+            </button>
+          `;
+        } else if (order.orderStatus === 'Ready') {
+          primaryBtnHtml = `
+            <button type="button" onclick="advanceStatus('${order.id}', 'Collected')" 
+                    class="text-[11px] font-bold px-2.5 py-1.5 rounded-xl shadow-xs whitespace-nowrap text-white hover:opacity-90 transition"
+                    style="background-color: var(--primary-hover);">
+              Mark collected
+            </button>
+          `;
+        }
+
+        // Secondary menu / actions
+        const canCancel = order.orderStatus === 'Placed' || order.orderStatus === 'Preparing';
+        const canMarkPaid = order.paymentMethod === 'Pay at counter' && order.paymentStatus === 'Pending';
+        const canMarkMissed = order.orderStatus === 'Ready';
+
+        return `
+          <tr id="row-${order.id}" class="hover:bg-amber-50/40 transition-colors ${isSelected ? 'bg-amber-50/70' : ''}">
+            <!-- Checkbox -->
+            <td class="p-3.5 text-center no-print">
+              <input type="checkbox" 
+                     ${isSelected ? 'checked' : ''} 
+                     onchange="toggleRowSelection('${order.id}', this.checked)" 
+                     class="rounded w-4 h-4 cursor-pointer" 
+                     style="accent-color: var(--primary);" />
+            </td>
+
+            <!-- Token -->
+            <td class="p-3.5">
+              <span class="inline-flex items-center px-2.5 py-1 rounded-xl text-xs font-black shadow-xs cursor-pointer hover:opacity-85"
+                    onclick="openDetails('${order.id}')"
+                    style="background-color: var(--bg-notice); color: var(--primary); border: 1px solid var(--border-notice);">
+                ${order.token}
+              </span>
+            </td>
+
+            <!-- Student -->
+            <td class="p-3.5">
+              <div class="font-bold text-xs" style="color: var(--text-dark);">${order.studentName}</div>
+              <div class="text-[11px]" style="color: var(--text-muted);">${order.collegeId || '-'}</div>
+            </td>
+
+            <!-- Items -->
+            <td class="p-3.5 max-w-xs">
+              <div class="line-clamp-1 text-xs" style="color: var(--text-dark);" title="${itemsSummary}">${itemsSummary}</div>
+              <span class="text-[10px] font-semibold" style="color: var(--text-muted);">${(order.items || []).length} unique items</span>
+            </td>
+
+            <!-- Slot Time -->
+            <td class="p-3.5 whitespace-nowrap font-bold" style="color: var(--text-dark);">
+              ${order.slotTime}
+            </td>
+
+            <!-- Total -->
+            <td class="p-3.5 whitespace-nowrap font-black text-xs" style="color: var(--text-dark);">
+              ₹${order.total}
+            </td>
+
+            <!-- Payment -->
+            <td class="p-3.5 whitespace-nowrap">
+              <div class="flex items-center gap-1.5">
+                ${getPaymentStatusBadge(order.paymentStatus)}
+                <span class="text-[10px] font-medium" style="color: var(--text-muted);">${order.paymentMethod === 'UPI' ? 'UPI' : 'Cash'}</span>
+              </div>
+            </td>
+
+            <!-- Status -->
+            <td class="p-3.5 whitespace-nowrap">
+              ${getOrderStatusBadge(order.orderStatus)}
+            </td>
+
+            <!-- Actions -->
+            <td class="p-3.5 text-right whitespace-nowrap no-print">
+              <div class="flex items-center justify-end gap-1.5">
+                ${primaryBtnHtml}
+                
+                <!-- Details Button -->
+                <button type="button" 
+                        onclick="openDetails('${order.id}')" 
+                        class="p-1.5 rounded-lg border hover:bg-white text-xs font-bold transition shadow-xs"
+                        style="background-color: var(--bg-panel); color: var(--text-dark); border-color: var(--border-soft);"
+                        title="View Full Details">
+                  👁️
+                </button>
+
+                <!-- Actions Menu Button -->
+                <div class="relative inline-block text-left">
+                  <button type="button" 
+                          onclick="toggleRowMenu('menu-${order.id}')"
+                          class="p-1.5 rounded-lg border hover:bg-white text-xs font-bold transition shadow-xs"
+                          style="background-color: var(--bg-panel); color: var(--text-dark); border-color: var(--border-soft);"
+                          title="More Actions">
+                    &vellip;
+                  </button>
+                  <div id="menu-${order.id}" class="hidden absolute right-0 mt-1 w-40 rounded-xl shadow-xl z-30 p-1.5 text-left border"
+                       style="background-color: var(--bg-card); border-color: var(--border-soft);">
+                    <button type="button" onclick="openDetails('${order.id}'); toggleRowMenu('menu-${order.id}')" class="w-full text-left px-2.5 py-1.5 rounded-lg text-xs font-bold hover:bg-gray-100 flex items-center gap-1.5">
+                      <span>📄</span> <span>View Details</span>
+                    </button>
+                    ${canMarkPaid ? `
+                      <button type="button" onclick="markPaid('${order.id}'); toggleRowMenu('menu-${order.id}')" class="w-full text-left px-2.5 py-1.5 rounded-lg text-xs font-bold hover:bg-emerald-50 text-emerald-800 flex items-center gap-1.5">
+                        <span>💵</span> <span>Mark as Paid</span>
+                      </button>
+                    ` : ''}
+                    ${canMarkMissed ? `
+                      <button type="button" onclick="advanceStatus('${order.id}', 'Missed'); toggleRowMenu('menu-${order.id}')" class="w-full text-left px-2.5 py-1.5 rounded-lg text-xs font-bold hover:bg-red-50 text-red-700 flex items-center gap-1.5">
+                        <span>⏰</span> <span>Mark as Missed</span>
+                      </button>
+                    ` : ''}
+                    ${canCancel ? `
+                      <button type="button" onclick="openCancelModal('${order.id}'); toggleRowMenu('menu-${order.id}')" class="w-full text-left px-2.5 py-1.5 rounded-lg text-xs font-bold hover:bg-red-50 text-red-700 flex items-center gap-1.5">
+                        <span>❌</span> <span>Cancel Order</span>
+                      </button>
+                    ` : ''}
+                  </div>
+                </div>
+
+              </div>
+            </td>
+          </tr>
+        `;
+      }).join('');
+
+      // MOBILE CARDS LIST
+      mobileList.innerHTML = filtered.map(order => {
+        const isSelected = selectedOrderIds.has(order.id);
+        const itemsSummary = (order.items || []).map(i => `${i.qty}x ${i.name}`).join(', ');
+
+        let primaryBtnHtml = '';
+        if (order.orderStatus === 'Placed') {
+          primaryBtnHtml = `<button type="button" onclick="advanceStatus('${order.id}', 'Preparing')" class="btn-primary text-xs font-bold px-3 py-1.5">Start preparing</button>`;
+        } else if (order.orderStatus === 'Preparing') {
+          primaryBtnHtml = `<button type="button" onclick="advanceStatus('${order.id}', 'Ready')" class="text-xs font-bold px-3 py-1.5 rounded-xl text-white" style="background-color: var(--success);">Mark ready</button>`;
+        } else if (order.orderStatus === 'Ready') {
+          primaryBtnHtml = `<button type="button" onclick="advanceStatus('${order.id}', 'Collected')" class="text-xs font-bold px-3 py-1.5 rounded-xl text-white" style="background-color: var(--primary-hover);">Mark collected</button>`;
+        }
+
+        return `
+          <div class="p-4 space-y-3 ${isSelected ? 'bg-amber-50/70' : ''}">
+            <div class="flex items-center justify-between">
+              <div class="flex items-center gap-2">
+                <input type="checkbox" ${isSelected ? 'checked' : ''} onchange="toggleRowSelection('${order.id}', this.checked)" class="rounded w-4 h-4 cursor-pointer" style="accent-color: var(--primary);">
+                <span class="font-black text-sm px-2.5 py-0.5 rounded-xl cursor-pointer" onclick="openDetails('${order.id}')" style="background-color: var(--bg-notice); color: var(--primary); border: 1px solid var(--border-notice);">${order.token}</span>
+                <span class="font-extrabold text-sm" style="color: var(--text-dark);">${order.studentName}</span>
+              </div>
+              <div>${getOrderStatusBadge(order.orderStatus)}</div>
+            </div>
+
+            <p class="text-xs font-medium line-clamp-1" style="color: var(--text-muted);">${itemsSummary}</p>
+
+            <div class="flex items-center justify-between text-xs pt-1 border-t" style="border-color: var(--border-soft);">
+              <div>
+                <span class="font-bold" style="color: var(--text-dark);">${order.slotTime}</span> &bull; 
+                <span class="font-extrabold" style="color: var(--text-dark);">₹${order.total}</span>
+              </div>
+              <div class="flex items-center gap-1.5">
+                ${getPaymentStatusBadge(order.paymentStatus)}
+                <span class="text-[10px] font-medium" style="color: var(--text-muted);">${order.paymentMethod === 'UPI' ? 'UPI' : 'Cash'}</span>
+              </div>
+            </div>
+
+            <div class="flex items-center justify-between gap-2 pt-1">
+              <button type="button" onclick="openDetails('${order.id}')" class="text-xs font-bold px-3 py-1.5 rounded-xl border" style="background-color: var(--bg-panel); color: var(--text-dark); border-color: var(--border-soft);">
+                View Details
+              </button>
+              ${primaryBtnHtml}
+            </div>
+          </div>
+        `;
+      }).join('');
+    }
+
+    // Toggle dropdown action menu on row
+    function toggleRowMenu(menuId) {
+      // Close other menus first
+      document.querySelectorAll('[id^="menu-"]').forEach(el => {
+        if (el.id !== menuId) el.classList.add('hidden');
+      });
+      const el = document.getElementById(menuId);
+      if (el) el.classList.toggle('hidden');
+    }
+
+    // Close open menus when clicking outside
+    document.addEventListener('click', (e) => {
+      if (!e.target.closest('[id^="menu-"]') && !e.target.closest('button[title="More Actions"]')) {
+        document.querySelectorAll('[id^="menu-"]').forEach(el => el.classList.add('hidden'));
+      }
+    });
+
+    // -------------------------------------------------------------------------
+    // 6. ORDER STATUS ADVANCEMENT & VALIDATION RULES
+    // -------------------------------------------------------------------------
+    /**
+     * Advances an order to next status according to strict rules:
+     * Placed -> Preparing -> Ready -> Collected.
+     * Cannot modify Collected, Cancelled or Missed orders.
+     */
+    async function advanceStatus(orderId, newStatus) {
+      const order = allOrders.find(o => o.id === orderId);
+      if (!order) return;
+
+      // Rule validation
+      if (['Collected', 'Cancelled', 'Missed'].includes(order.orderStatus)) {
+        showToast(`Cannot change status: order is already ${order.orderStatus}`, 'warning');
+        return;
+      }
+
+      // Valid sequence check
+      if (newStatus === 'Preparing' && order.orderStatus !== 'Placed') return;
+      if (newStatus === 'Ready' && order.orderStatus !== 'Preparing') return;
+      if (newStatus === 'Collected' && order.orderStatus !== 'Ready') return;
+
+      try {
+        const updated = await updateOrderStatus(orderId, newStatus);
+        if (updated) {
+          const idx = allOrders.findIndex(o => o.id === orderId);
+          if (idx !== -1) allOrders[idx] = updated;
+        }
+
+        // Toast wording matching button
+        if (newStatus === 'Preparing') showToast(`Order ${order.token} marked as Preparing`, 'info');
+        else if (newStatus === 'Ready') showToast(`Order ${order.token} marked as Ready for pickup`, 'success');
+        else if (newStatus === 'Collected') showToast(`Order ${order.token} marked as Collected`, 'success');
+        else if (newStatus === 'Missed') showToast(`Order ${order.token} marked as Missed`, 'warning');
+
+        renderTabs();
+        renderTable();
+        if (document.getElementById('orderDetailsModal').open) {
+          openDetails(orderId);
+        }
+      } catch (err) {
+        showToast(err.message || 'Error updating order status', 'error');
+      }
+    }
+
+    /**
+     * Marks a Pay at counter order as Paid
+     */
+    async function markPaid(orderId) {
+      const order = allOrders.find(o => o.id === orderId);
+      if (!order) return;
+
+      try {
+        const updated = await markOrderPaid(orderId);
+        if (updated) {
+          const idx = allOrders.findIndex(o => o.id === orderId);
+          if (idx !== -1) allOrders[idx] = updated;
+        }
+        showToast(`Order ${order.token} marked as Paid`, 'success');
+        renderTabs();
+        renderTable();
+        if (document.getElementById('orderDetailsModal').open) {
+          openDetails(orderId);
+        }
+      } catch (err) {
+        showToast(err.message || 'Error marking order as Paid', 'error');
+      }
+    }
+
+    // -------------------------------------------------------------------------
+    // 7. ORDER CANCELLATION & SLOT CAPACITY RELEASE
+    // -------------------------------------------------------------------------
+    function openCancelModal(orderId) {
+      const order = allOrders.find(o => o.id === orderId);
+      if (!order) return;
+
+      if (!['Placed', 'Preparing'].includes(order.orderStatus)) {
+        showToast(`Cannot cancel order in ${order.orderStatus} status`, 'warning');
+        return;
+      }
+
+      document.getElementById('cancelOrderId').value = order.id;
+      document.getElementById('cancelOrderPromptText').textContent = 
+        `Are you sure you want to cancel order ${order.token} for ${order.studentName}? Slot "${order.slotTime}" will be freed.`;
+
+      const noteInput = document.getElementById('cancelNoteInput');
+      if (noteInput) noteInput.value = '';
+      const reasonSelect = document.getElementById('cancelReasonSelect');
+      if (reasonSelect) reasonSelect.selectedIndex = 0;
+
+      document.getElementById('cancelOrderModal').showModal();
+    }
+
+    function closeCancelModal() {
+      document.getElementById('cancelOrderModal').close();
+    }
+
+    async function handleCancelSubmit(event) {
+      event.preventDefault();
+      const orderId = document.getElementById('cancelOrderId').value;
+      const reasonSelect = document.getElementById('cancelReasonSelect').value;
+      const noteInput = document.getElementById('cancelNoteInput')?.value?.trim();
+      const reason = noteInput ? `${reasonSelect} (${noteInput})` : reasonSelect;
+
+      try {
+        await cancelOrder(orderId, reason, 'admin');
+        closeCancelModal();
+        showToast('Order cancelled', 'info');
+        await loadOrders();
+      } catch (err) {
+        console.error('Failed to cancel order:', err);
+        showToast(err.message || 'Could not cancel order', 'error');
+      }
+    }
+
+    // -------------------------------------------------------------------------
+    // 8. VERIFY TOKEN INPUT & CONFIRM PICKUP
+    // -------------------------------------------------------------------------
+    async function handleTokenVerify(event) {
+      event.preventDefault();
+      const input = document.getElementById('verifyTokenInput');
+      let rawToken = input.value.trim().toUpperCase();
+
+      if (!rawToken) {
+        showToast('Please enter a token number', 'warning');
+        return;
+      }
+
+      // Query order via storage.js verifyToken
+      const order = await verifyToken(rawToken);
+
+      const container = document.getElementById('verifyResultContainer');
+
+      if (!order) {
+        container.className = 'p-4 rounded-2xl border text-xs font-bold flex items-center justify-between gap-3 shadow-sm';
+        container.style.backgroundColor = 'var(--danger-bg)';
+        container.style.borderColor = 'var(--danger)';
+        container.style.color = 'var(--danger)';
+        container.innerHTML = `
+          <div class="flex items-center gap-2">
+            <span>❌</span>
+            <span>No order found matching token "${rawToken}". Please check token number.</span>
+          </div>
+          <button type="button" onclick="dismissVerifyResult()" class="underline text-[11px]">Dismiss</button>
+        `;
+        container.classList.remove('hidden');
+        return;
+      }
+
+      if (order.orderStatus === 'Collected') {
+        container.className = 'p-4 rounded-2xl border text-xs font-bold flex items-center justify-between gap-3 shadow-sm';
+        container.style.backgroundColor = 'var(--neutral-bg)';
+        container.style.borderColor = 'var(--border-soft)';
+        container.style.color = 'var(--text-muted)';
+        container.innerHTML = `
+          <div class="flex items-center gap-2">
+            <span>ℹ️</span>
+            <span>Order ${order.token} (${order.studentName}) was already collected earlier.</span>
+          </div>
+          <button type="button" onclick="dismissVerifyResult()" class="underline text-[11px]">Dismiss</button>
+        `;
+        container.classList.remove('hidden');
+        return;
+      }
+
+      if (order.orderStatus !== 'Ready') {
+        container.className = 'p-4 rounded-2xl border text-xs font-bold flex items-center justify-between gap-3 shadow-sm';
+        container.style.backgroundColor = 'var(--bg-notice)';
+        container.style.borderColor = 'var(--border-notice)';
+        container.style.color = 'var(--text-dark)';
+        container.innerHTML = `
+          <div class="flex items-center gap-2">
+            <span>⚠️</span>
+            <span>Order ${order.token} is currently in <u>${order.orderStatus}</u> status — food is not ready for pickup yet!</span>
+          </div>
+          <div class="flex items-center gap-2">
+            <button type="button" onclick="openDetails('${order.id}')" class="underline text-[11px] font-bold">View</button>
+            <button type="button" onclick="dismissVerifyResult()" class="underline text-[11px]">Dismiss</button>
+          </div>
+        `;
+        container.classList.remove('hidden');
+        return;
+      }
+
+      // Order IS READY! Show Confirmation Card
+      const itemsList = (order.items || []).map(i => `${i.qty}x ${i.name}`).join(', ');
+
+      container.className = 'p-4 rounded-2xl border text-xs shadow-md';
+      container.style.backgroundColor = 'var(--success-bg)';
+      container.style.borderColor = 'var(--success)';
+      container.innerHTML = `
+        <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+          <div class="flex items-start gap-3">
+            <span class="w-10 h-10 rounded-xl bg-white flex items-center justify-center text-sm font-black shadow-xs" style="color: var(--success); border: 1px solid var(--success);">
+              ✓
+            </span>
+            <div>
+              <div class="flex items-center gap-2">
+                <span class="font-extrabold text-sm" style="color: var(--success);">Valid Token: ${order.token}</span>
+                <span class="font-bold text-xs" style="color: var(--text-dark);">${order.studentName} (${order.collegeId || 'ID Verified'})</span>
+              </div>
+              <p class="text-[11px] mt-0.5" style="color: var(--text-dark);">
+                Items: <span class="font-semibold">${itemsList}</span> &bull; Total: <span class="font-bold">₹${order.total}</span>
+              </p>
+            </div>
+          </div>
+
+          <div class="flex items-center gap-2 self-start sm:self-center">
+            <button type="button" 
+                    onclick="advanceStatus('${order.id}', 'Collected'); dismissVerifyResult();" 
+                    class="font-bold text-xs px-4 py-2 rounded-xl text-white shadow-md transition hover:opacity-90"
+                    style="background-color: var(--success);">
+              Confirm Pickup
+            </button>
+            <button type="button" onclick="dismissVerifyResult()" class="text-xs px-2.5 py-2 hover:opacity-75" style="color: var(--text-muted);">
+              Cancel
+            </button>
+          </div>
+        </div>
+      `;
+      container.classList.remove('hidden');
+    }
+
+    function dismissVerifyResult() {
+      document.getElementById('verifyResultContainer').classList.add('hidden');
+      document.getElementById('verifyTokenInput').value = '';
+    }
+
+    // -------------------------------------------------------------------------
+    // 9. BULK ACTIONS HANDLING
+    // -------------------------------------------------------------------------
+    function toggleRowSelection(orderId, isChecked) {
+      if (isChecked) selectedOrderIds.add(orderId);
+      else selectedOrderIds.delete(orderId);
+      updateBulkActionsBar();
+    }
+
+    function toggleSelectAll(isChecked) {
+      const searchVal = document.getElementById('searchInput').value.trim().toLowerCase();
+      const slotVal = document.getElementById('slotFilter').value;
+      const paymentVal = document.getElementById('paymentFilter').value;
+
+      allOrders.forEach(order => {
+        if (currentStatusTab !== 'All' && order.orderStatus !== currentStatusTab) return;
+        if (slotVal !== 'All' && order.slotTime !== slotVal) return;
+        if (paymentVal !== 'All' && order.paymentStatus !== paymentVal) return;
+        if (searchVal) {
+          const m = (order.token || '').toLowerCase().includes(searchVal) ||
+                    (order.studentName || '').toLowerCase().includes(searchVal) ||
+                    (order.collegeId || '').toLowerCase().includes(searchVal);
+          if (!m) return;
+        }
+
+        if (isChecked) selectedOrderIds.add(order.id);
+        else selectedOrderIds.delete(order.id);
+      });
+
+      updateBulkActionsBar();
+      renderTable();
+    }
+
+    function clearSelection() {
+      selectedOrderIds.clear();
+      const selectAll = document.getElementById('selectAllCheckbox');
+      if (selectAll) selectAll.checked = false;
+      updateBulkActionsBar();
+      renderTable();
+    }
+
+    function updateBulkActionsBar() {
+      const bar = document.getElementById('bulkActionsBar');
+      const countText = document.getElementById('selectedCountText');
+
+      if (selectedOrderIds.size > 0) {
+        bar.classList.remove('hidden');
+        countText.textContent = `${selectedOrderIds.size} orders selected`;
+      } else {
+        bar.classList.add('hidden');
+      }
+    }
+
+    async function bulkUpdate(targetStatus) {
+      if (selectedOrderIds.size === 0) return;
+
+      try {
+        const result = await bulkUpdateOrderStatus(selectedOrderIds, targetStatus);
+        allOrders = result.orders || (await getOrders());
+        clearSelection();
+        renderTabs();
+        renderTable();
+
+        let msg = `Updated ${result.updatedCount} orders to ${targetStatus}`;
+        if (result.skippedCount > 0) {
+          msg += ` (${result.skippedCount} skipped as they were not in the required preceding status)`;
+        }
+        showToast(msg, result.updatedCount > 0 ? 'success' : 'warning');
+      } catch (err) {
+        showToast(err.message || 'Error updating orders', 'error');
+      }
+    }
+
+    // -------------------------------------------------------------------------
+    // 10. ORDER DETAILS MODAL
+    // -------------------------------------------------------------------------
+    function openDetails(orderId) {
+      const order = allOrders.find(o => o.id === orderId);
+      if (!order) return;
+
+      document.getElementById('detailTokenHeader').textContent = order.token;
+      document.getElementById('detailOrderIdSub').textContent = `${order.id} • Placed at ${new Date(order.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}`;
+      document.getElementById('detailStudentName').textContent = order.studentName;
+      document.getElementById('detailCollegeId').textContent = order.collegeId || 'Student ID: N/A';
+      document.getElementById('detailSlotTime').textContent = order.slotTime;
+      document.getElementById('detailStudentPhone').textContent = `📞 ${order.phone || 'No phone listed'}`;
+
+      // Items table
+      const tbody = document.getElementById('detailItemsTableBody');
+      tbody.innerHTML = (order.items || []).map(item => `
+        <tr class="text-xs">
+          <td class="p-2.5 font-bold" style="color: var(--text-dark);">${item.name}</td>
+          <td class="p-2.5 text-center font-bold">${item.qty}</td>
+          <td class="p-2.5 text-right font-semibold">₹${item.price}</td>
+          <td class="p-2.5 text-right font-extrabold" style="color: var(--text-dark);">₹${item.qty * item.price}</td>
+        </tr>
+      `).join('');
+
+      document.getElementById('detailTotalAmount').textContent = `₹${order.total}`;
+      document.getElementById('detailPaymentBadge').innerHTML = getPaymentStatusBadge(order.paymentStatus);
+      document.getElementById('detailPaymentMethod').textContent = `Method: ${order.paymentMethod}`;
+      document.getElementById('detailOrderNote').textContent = order.note || 'None';
+
+      // Fulfillment Timeline
+      const steps = ['Placed', 'Preparing', 'Ready', 'Collected'];
+      const currentIdx = steps.indexOf(order.orderStatus);
+      const isCancelledOrMissed = ['Cancelled', 'Missed'].includes(order.orderStatus);
+
+      const timeline = document.getElementById('detailTimelineContainer');
+      if (isCancelledOrMissed) {
+        timeline.innerHTML = `
+          <div class="w-full text-center py-1">
+            <span class="font-extrabold text-sm" style="color: var(--danger);">Order Status: ${order.orderStatus}</span>
+            <p class="text-[11px] mt-0.5" style="color: var(--text-muted);">${order.cancelReason ? `Reason: ${order.cancelReason}` : (order.note || 'This order was stopped')}</p>
+          </div>
+        `;
+      } else {
+        timeline.innerHTML = steps.map((step, idx) => {
+          const isDone = idx <= currentIdx;
+          const isCurrent = idx === currentIdx;
+
+          return `
+            <div class="flex flex-col items-center flex-1">
+              <div class="w-6 h-6 rounded-full flex items-center justify-center font-extrabold text-[10px] shadow-xs mb-1"
+                   style="${isDone ? 'background-color: var(--primary); color: white;' : 'background-color: var(--bg-panel); color: var(--text-muted);'}">
+                ${isDone ? '✓' : idx + 1}
+              </div>
+              <span class="text-[10px] font-bold ${isCurrent ? 'underline' : ''}" 
+                    style="color: ${isDone ? 'var(--text-dark)' : 'var(--text-muted)'};">${step}</span>
+            </div>
+          `;
+        }).join('');
+      }
+
+      // Action buttons in modal footer
+      const actionBtnsContainer = document.getElementById('detailModalActionButtons');
+      actionBtnsContainer.innerHTML = '';
+
+      if (order.paymentMethod === 'Pay at counter' && order.paymentStatus === 'Pending') {
+        const payBtn = document.createElement('button');
+        payBtn.className = 'font-bold text-xs px-3 py-2 rounded-xl text-emerald-800 bg-emerald-100 border border-emerald-300';
+        payBtn.textContent = 'Mark as Paid';
+        payBtn.onclick = () => markPaid(order.id);
+        actionBtnsContainer.appendChild(payBtn);
+      }
+
+      if (order.orderStatus === 'Placed') {
+        const nextBtn = document.createElement('button');
+        nextBtn.className = 'btn-primary text-xs font-bold px-4 py-2';
+        nextBtn.textContent = 'Start preparing →';
+        nextBtn.onclick = () => advanceStatus(order.id, 'Preparing');
+        actionBtnsContainer.appendChild(nextBtn);
+      } else if (order.orderStatus === 'Preparing') {
+        const nextBtn = document.createElement('button');
+        nextBtn.className = 'text-xs font-bold px-4 py-2 rounded-xl text-white shadow-sm';
+        nextBtn.style.backgroundColor = 'var(--success)';
+        nextBtn.textContent = 'Mark ready →';
+        nextBtn.onclick = () => advanceStatus(order.id, 'Ready');
+        actionBtnsContainer.appendChild(nextBtn);
+      } else if (order.orderStatus === 'Ready') {
+        const nextBtn = document.createElement('button');
+        nextBtn.className = 'text-xs font-bold px-4 py-2 rounded-xl text-white shadow-sm';
+        nextBtn.style.backgroundColor = 'var(--primary-hover)';
+        nextBtn.textContent = 'Mark collected →';
+        nextBtn.onclick = () => advanceStatus(order.id, 'Collected');
+        actionBtnsContainer.appendChild(nextBtn);
+      }
+
+      document.getElementById('orderDetailsModal').showModal();
+    }
+
+    function closeDetailsModal() {
+      document.getElementById('orderDetailsModal').close();
+    }
+
+    // -------------------------------------------------------------------------
+    // 11. CSV EXPORT UTILITY
+    // -------------------------------------------------------------------------
+    function exportCsv() {
+      if (allOrders.length === 0) {
+        showToast('No orders to export', 'warning');
+        return;
+      }
+
+      const headers = ['Token', 'Student Name', 'College ID', 'Phone', 'Items', 'Total', 'Slot Time', 'Order Status', 'Payment Status', 'Payment Method', 'Created At'];
+      
+      const rows = allOrders.map(o => {
+        const items = (o.items || []).map(i => `${i.qty}x ${i.name}`).join('; ');
+        return [
+          `"${o.token}"`,
+          `"${o.studentName}"`,
+          `"${o.collegeId || ''}"`,
+          `"${o.phone || ''}"`,
+          `"${items}"`,
+          o.total,
+          `"${o.slotTime}"`,
+          `"${o.orderStatus}"`,
+          `"${o.paymentStatus}"`,
+          `"${o.paymentMethod}"`,
+          `"${o.createdAt}"`
+        ].join(',');
+      });
+
+      const csvContent = 'data:text/csv;charset=utf-8,' + [headers.join(','), ...rows].join('\n');
+      const encodedUri = encodeURI(csvContent);
+      const link = document.createElement('a');
+      link.setAttribute('href', encodedUri);
+      link.setAttribute('download', `queuebite_orders_${new Date().toISOString().slice(0, 10)}.csv`);
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+
+      showToast('Orders exported to CSV', 'success');
+    }
+
+    function clearSearch() {
+      document.getElementById('searchInput').value = '';
+      renderTable();
+    }
+
+    function resetAllFilters() {
+      document.getElementById('searchInput').value = '';
+      document.getElementById('slotFilter').value = 'All';
+      document.getElementById('paymentFilter').value = 'All';
+      document.getElementById('sortOption').value = 'slot_asc';
+      currentStatusTab = 'All';
+      renderTabs();
+      renderTable();
+    }
+
+    // -------------------------------------------------------------------------
+    // 12. TOAST NOTIFICATION UTILITY
+    // -------------------------------------------------------------------------
+    function showToast(message, type = 'info') {
+      const container = document.getElementById('toastContainer');
+      const toast = document.createElement('div');
+      
+      let icon = 'ℹ️';
+      let borderAccent = 'var(--primary)';
+
+      if (type === 'success') {
+        icon = '✅';
+        borderAccent = 'var(--success)';
+      } else if (type === 'warning') {
+        icon = '⚠️';
+        borderAccent = 'var(--accent)';
+      } else if (type === 'error') {
+        icon = '❌';
+        borderAccent = 'var(--danger)';
+      }
+
+      toast.className = `pointer-events-auto flex items-center gap-2.5 px-4 py-3 rounded-2xl shadow-xl text-xs font-bold transform transition-all duration-300 translate-y-3 opacity-0`;
+      toast.style.backgroundColor = 'var(--text-dark)';
+      toast.style.color = 'var(--bg-page)';
+      toast.style.border = '1px solid var(--border-soft)';
+      toast.style.borderLeft = `5px solid ${borderAccent}`;
+      toast.style.boxShadow = '0 10px 25px -3px rgba(47, 33, 24, 0.35)';
+      toast.innerHTML = `<span>${icon}</span> <span>${message}</span>`;
+
+      container.appendChild(toast);
+
+      requestAnimationFrame(() => {
+        toast.classList.remove('translate-y-3', 'opacity-0');
+      });
+
+      setTimeout(() => {
+        toast.classList.add('opacity-0', 'translate-y-2');
+        setTimeout(() => toast.remove(), 300);
+      }, 2800);
+    }
+
+    // -------------------------------------------------------------------------
+    // 13. REAL-TIME STORAGE EVENT & NEW ORDER DETECTION
+    // -------------------------------------------------------------------------
+    async function checkForNewOrders() {
+      try {
+        const currentOrders = await getOrders();
+        if (currentOrders.length > knownOrdersCount) {
+          const latestOrder = currentOrders[0];
+          showToast(`New order ${latestOrder.token} received!`, 'success');
+          allOrders = currentOrders;
+          knownOrdersCount = currentOrders.length;
+          renderTabs();
+          renderTable();
+
+          // Highlight new row briefly
+          const row = document.getElementById(`row-${latestOrder.id}`);
+          if (row) row.classList.add('new-order-highlight');
+        } else if (currentOrders.length !== allOrders.length) {
+          allOrders = currentOrders;
+          knownOrdersCount = currentOrders.length;
+          renderTabs();
+          renderTable();
+        }
+      } catch (err) {
+        console.error('Error checking for new orders:', err);
+      }
+    }
+
+    // -------------------------------------------------------------------------
+    // 14. LOGOUT & AUTH GUARD
+    // -------------------------------------------------------------------------
+    async function handleLogout(event) {
+      if (event) event.preventDefault();
+      await logoutUser();
+      window.location.href = 'login.html';
+    }
+
+    let pollInterval = null;
+
+    function startAutoRefresh() {
+      if (pollInterval) clearInterval(pollInterval);
+      pollInterval = setInterval(checkForNewOrders, 10000);
+    }
+
+    document.addEventListener('DOMContentLoaded', async () => {
+      // 1. Auth Guard: Admin access only
+      const session = await getSession();
+      if (!session || session.role !== 'admin') {
+        window.location.href = 'login.html';
+        return;
+      }
+
+      // 2. Check query parameter for initial status filter (e.g. orders.html?status=Placed)
+      const urlParams = new URLSearchParams(window.location.search);
+      const queryStatus = urlParams.get('status');
+      if (queryStatus && ['Placed', 'Preparing', 'Ready', 'Collected', 'Cancelled', 'Missed'].includes(queryStatus)) {
+        currentStatusTab = queryStatus;
+      }
+
+      await loadOrders();
+      startAutoRefresh();
+
+      // 3. Listen for cross-tab storage changes
+      window.addEventListener('storage', async (e) => {
+        const watchedKeys = [
+          typeof STORAGE_KEYS !== 'undefined' ? STORAGE_KEYS.ORDERS : 'cubite_orders',
+          typeof STORAGE_KEYS !== 'undefined' ? STORAGE_KEYS.SLOTS : 'cubite_slots',
+          typeof STORAGE_KEYS !== 'undefined' ? STORAGE_KEYS.CANTEEN_OPEN : 'cubite_canteen_open'
+        ];
+        if (watchedKeys.includes(e.key)) {
+          await loadOrders();
+        }
+      });
+
+      // 4. Tab visibility and focus sync
+      document.addEventListener('visibilitychange', async () => {
+        if (document.visibilityState === 'visible') {
+          await loadOrders();
+        }
+      });
+
+      window.addEventListener('focus', async () => {
+        await loadOrders();
+      });
+    });
+  </script>
+
+</body>
+</html>

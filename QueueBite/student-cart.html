@@ -1,0 +1,1556 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>QueueBite – Student Cart</title>
+  <!-- Tailwind CSS via CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <!-- Theme Configuration (Cocoa & Cream) -->
+  <script src="theme.js"></script>
+  <!-- Plus Jakarta Sans Font -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+
+  <style>
+    /* Cocoa and Cream Theme Palette */
+    :root {
+      --bg-page:        #FBF4E9;   /* main cream background */
+      --bg-panel:       #EFE3D3;   /* sidebar, filter bar, toggle tracks, chips */
+      --bg-card:        #FFFFFF;   /* cards, inputs, modal */
+      --bg-notice:      #FAE8D0;   /* info boxes, highlights, tag backgrounds */
+      --border-notice:  #F0C888;   /* border of info boxes */
+      --border-soft:    #E4D6C3;   /* normal card and input borders */
+      --text-dark:      #2F2118;   /* headings and main text */
+      --text-muted:     #6B5645;   /* labels, secondary text */
+      --text-placeholder: #B9AA9A; /* placeholder text */
+      --primary:        #8B5E3C;   /* main buttons, active tabs, headers */
+      --primary-hover:  #774D2F;   /* button hover */
+      --accent:         #E9A23B;   /* mustard: tags, highlights */
+      --success:        #4F7A4A;   /* Available / Veg */
+      --success-bg:     #E3EFDC;
+      --danger:         #B3453A;   /* Sold out / Non-veg */
+      --danger-bg:      #F7DEDA;
+      --neutral-bg:     #E4DDD3;
+    }
+
+    body {
+      font-family: 'Plus Jakarta Sans', sans-serif;
+      background-color: var(--bg-page);
+      color: var(--text-dark);
+    }
+
+    /* Cards */
+    .dashboard-card {
+      background-color: var(--bg-card);
+      border: 1px solid var(--border-soft);
+      border-radius: 20px;
+      box-shadow: 0 4px 20px -2px rgba(47, 33, 24, 0.06);
+    }
+
+    /* Primary buttons */
+    .btn-primary {
+      background-color: var(--primary);
+      color: #FFFFFF;
+      border-radius: 14px;
+      box-shadow: 0 4px 14px -2px rgba(139, 94, 60, 0.28);
+      transition: all 0.2s ease;
+      cursor: pointer;
+    }
+    .btn-primary:hover:not(:disabled) {
+      background-color: var(--primary-hover);
+      box-shadow: 0 6px 18px -2px rgba(139, 94, 60, 0.38);
+    }
+    .btn-primary:active:not(:disabled) {
+      transform: scale(0.98);
+    }
+    .btn-primary:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+      box-shadow: none;
+    }
+
+    /* Focus styling */
+    textarea:focus, input:focus {
+      outline: none !important;
+      border-color: var(--primary) !important;
+      box-shadow: 0 0 0 2px rgba(139, 94, 60, 0.2) !important;
+    }
+
+    /* Dialog backdrop */
+    dialog::backdrop {
+      background: rgba(47, 33, 24, 0.55);
+      backdrop-filter: blur(4px);
+    }
+  </style>
+</head>
+
+<body class="min-h-screen flex flex-col antialiased selection:bg-[#E9A23B] selection:text-[#2F2118]">
+
+  <!-- ========================================================================= -->
+  <!-- 1. TOP NAVBAR (Matches student-menu.html)                                 -->
+  <!-- ========================================================================= -->
+  <header class="sticky top-0 z-30 border-b backdrop-blur-md transition-all"
+          style="background-color: rgba(251, 244, 233, 0.94); border-color: var(--border-soft);">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+      <div class="flex items-center justify-between h-16 sm:h-20">
+
+        <!-- Brand Logo -->
+        <a href="student-menu.html" class="flex items-center gap-2.5 group">
+          <div class="w-10 h-10 rounded-2xl flex items-center justify-center text-white text-xl shadow-md transition group-hover:scale-105"
+               style="background-color: var(--primary); box-shadow: 0 4px 14px rgba(139, 94, 60, 0.3);">
+            🍛
+          </div>
+          <div>
+            <span class="font-extrabold text-xl sm:text-2xl tracking-tight leading-none" style="color: var(--text-dark);">
+              QueueBite
+            </span>
+            <p class="text-[10px] font-bold tracking-wider uppercase hidden sm:block" style="color: var(--primary);">
+              Student Canteen
+            </p>
+          </div>
+        </a>
+
+        <!-- Desktop Navigation Links -->
+        <nav class="hidden md:flex items-center gap-1.5 p-1.5 rounded-2xl border"
+             style="background-color: var(--bg-panel); border-color: var(--border-soft);">
+          <a href="student-menu.html"
+             class="px-4 py-2 rounded-xl text-xs font-bold transition hover:opacity-80"
+             style="color: var(--text-muted);">
+            🍽️ Menu
+          </a>
+          <a href="student-track.html"
+             class="px-4 py-2 rounded-xl text-xs font-bold transition hover:opacity-80"
+             style="color: var(--text-muted);">
+            ⏱️ My Order
+          </a>
+          <a href="student-orders.html"
+             class="px-4 py-2 rounded-xl text-xs font-bold transition hover:opacity-80"
+             style="color: var(--text-muted);">
+            🧾 History
+          </a>
+        </nav>
+
+        <!-- Right Side: Active Cart & Student Profile -->
+        <div class="flex items-center gap-2 sm:gap-3">
+          
+          <!-- Cart Button (Active) -->
+          <a href="student-cart.html" 
+             id="navCartBtn" 
+             class="relative inline-flex items-center gap-2 px-3.5 py-2.5 rounded-2xl text-xs font-extrabold transition shadow-sm border"
+             style="background-color: var(--primary); color: #FFFFFF; border-color: var(--primary);"
+             aria-current="page"
+             title="Current Cart">
+            <span class="text-base leading-none">🛒</span>
+            <span class="hidden sm:inline">Cart</span>
+            <span id="navCartCount" 
+                  class="min-w-[20px] h-5 px-1.5 rounded-full flex items-center justify-center text-[10px] font-black text-[#2F2118]"
+                  style="background-color: var(--bg-page);">
+              0
+            </span>
+          </a>
+
+          <!-- Student Profile & Logout -->
+          <div class="hidden md:flex items-center gap-2">
+            <div class="px-3 py-2 rounded-2xl border flex items-center gap-2 text-xs font-bold shadow-2xs"
+                 style="background-color: var(--bg-panel); border-color: var(--border-soft); color: var(--text-dark);">
+              <span>🎓</span>
+              <span id="desktopStudentName">Student</span>
+            </div>
+            <button type="button" 
+                    onclick="handleLogout()" 
+                    class="px-3 py-2 rounded-2xl border text-xs font-bold transition hover:opacity-85 shadow-2xs"
+                    style="background-color: var(--danger-bg); border-color: rgba(179, 69, 58, 0.25); color: var(--danger);">
+              Logout
+            </button>
+          </div>
+
+          <!-- Mobile Hamburger Toggle -->
+          <button type="button" 
+                  id="mobileMenuBtn" 
+                  onclick="toggleMobileMenu()" 
+                  class="md:hidden w-10 h-10 rounded-2xl border flex items-center justify-center text-lg font-bold transition shadow-sm"
+                  style="background-color: var(--bg-card); border-color: var(--border-soft); color: var(--text-dark);"
+                  aria-label="Toggle mobile menu">
+            ☰
+          </button>
+
+        </div>
+
+      </div>
+    </div>
+
+    <!-- Mobile Collapsed Dropdown -->
+    <div id="mobileMenuDropdown" 
+         class="hidden md:hidden border-t px-4 py-3 space-y-2 transition-all"
+         style="background-color: var(--bg-panel); border-color: var(--border-soft);">
+      <div class="flex items-center justify-between pb-2 border-b" style="border-color: var(--border-soft);">
+        <div class="flex items-center gap-2 text-xs font-extrabold" style="color: var(--text-dark);">
+          <span>🎓</span>
+          <span id="mobileStudentName">Student</span>
+        </div>
+        <button type="button" 
+                onclick="handleLogout()" 
+                class="text-xs font-bold px-2.5 py-1 rounded-xl"
+                style="background-color: var(--danger-bg); color: var(--danger);">
+          Logout
+        </button>
+      </div>
+
+      <a href="student-menu.html" 
+         class="block px-3 py-2.5 rounded-xl text-xs font-bold hover:bg-white/50"
+         style="color: var(--text-dark);">
+        🍽️ Menu
+      </a>
+      <a href="student-cart.html" 
+         class="block px-3 py-2.5 rounded-xl text-xs font-extrabold shadow-sm"
+         style="background-color: var(--bg-card); color: var(--text-dark);">
+        🛒 Cart (Current)
+      </a>
+      <a href="student-track.html" 
+         class="block px-3 py-2.5 rounded-xl text-xs font-bold hover:bg-white/50"
+         style="color: var(--text-dark);">
+        ⏱️ My Order
+      </a>
+      <a href="student-orders.html" 
+         class="block px-3 py-2.5 rounded-xl text-xs font-bold hover:bg-white/50"
+         style="color: var(--text-dark);">
+        🧾 History
+      </a>
+    </div>
+  </header>
+
+  <!-- ========================================================================= -->
+  <!-- 2. CANTEEN CLOSED BANNER                                                  -->
+  <!-- ========================================================================= -->
+  <div id="canteenClosedBanner" 
+       class="hidden border-b px-4 py-3 text-center transition-all"
+       style="background-color: var(--danger-bg); border-color: var(--danger); color: var(--danger);">
+    <div class="max-w-7xl mx-auto flex items-center justify-center gap-2 text-xs sm:text-sm font-extrabold">
+      <span>🚫</span>
+      <span>Canteen is closed. Orders can't be placed right now.</span>
+    </div>
+  </div>
+
+  <!-- ========================================================================= -->
+  <!-- 3. MAIN CONTENT CONTAINER                                                 -->
+  <!-- ========================================================================= -->
+  <main class="flex-1 max-w-7xl mx-auto w-full px-4 sm:px-6 lg:px-8 py-6 sm:py-8">
+
+    <!-- Page Breadcrumb & Header -->
+    <div class="flex items-center justify-between gap-4 mb-6">
+      <div>
+        <div class="flex items-center gap-2 text-xs font-bold" style="color: var(--text-muted);">
+          <a href="student-menu.html" class="hover:underline">Menu</a>
+          <span>/</span>
+          <span style="color: var(--text-dark);">Your Cart</span>
+        </div>
+        <h1 class="text-2xl sm:text-3xl font-extrabold tracking-tight mt-1" style="color: var(--text-dark);">
+          Review Your Order
+        </h1>
+      </div>
+      
+      <a href="student-menu.html" 
+         class="inline-flex items-center gap-1.5 text-xs font-bold px-3.5 py-2 rounded-xl border transition hover:opacity-85 shadow-2xs"
+         style="background-color: var(--bg-card); border-color: var(--border-soft); color: var(--text-dark);">
+        <span>←</span>
+        <span>Add more dishes</span>
+      </a>
+    </div>
+
+    <!-- Empty Cart State -->
+    <div id="emptyCartView" class="hidden dashboard-card p-10 sm:p-16 text-center max-w-md mx-auto my-8">
+      <div class="w-20 h-20 rounded-3xl flex items-center justify-center text-4xl mx-auto mb-5 shadow-sm"
+           style="background-color: var(--bg-notice); color: var(--primary);">
+        🛍️
+      </div>
+      <h2 class="text-xl font-extrabold" style="color: var(--text-dark);">Your tray is empty</h2>
+      <p class="text-xs sm:text-sm mt-2 font-medium" style="color: var(--text-muted);">
+        Looks like you haven't added anything delicious to your order yet.
+      </p>
+      <div class="mt-6">
+        <a href="student-menu.html" class="btn-primary inline-flex items-center gap-2 px-6 py-3 text-xs font-bold">
+          <span>Browse Today's Menu</span>
+          <span>→</span>
+        </a>
+      </div>
+    </div>
+
+    <!-- Active Cart View: 2 Columns on Laptop, 1 Column on Mobile -->
+    <div id="activeCartView" class="grid grid-cols-1 lg:grid-cols-12 gap-6 sm:gap-8 items-start">
+
+      <!-- LEFT COLUMN: Cart Items & Special Instructions (7 cols) -->
+      <section class="lg:col-span-7 space-y-6">
+        
+        <!-- Cart Items Card -->
+        <div class="dashboard-card p-4 sm:p-6">
+          <div class="flex items-center justify-between pb-4 mb-4 border-b" style="border-color: var(--border-soft);">
+            <div class="flex items-center gap-2">
+              <span class="text-lg">🍽️</span>
+              <h2 class="font-extrabold text-base sm:text-lg" style="color: var(--text-dark);">
+                Selected Dishes
+              </h2>
+            </div>
+            <span id="cartCountBadge" class="text-xs font-bold px-2.5 py-1 rounded-full border"
+                  style="background-color: var(--bg-panel); border-color: var(--border-soft); color: var(--text-muted);">
+              0 items
+            </span>
+          </div>
+
+          <!-- Items List Container -->
+          <div id="cartItemsList" class="divide-y" style="border-color: var(--border-soft);">
+            <!-- Populated dynamically via renderCart() -->
+          </div>
+        </div>
+
+        <!-- Special Instructions / Note Box Card -->
+        <div class="dashboard-card p-4 sm:p-6">
+          <div class="flex items-center justify-between mb-2">
+            <label for="orderNote" class="text-xs font-extrabold uppercase tracking-wider flex items-center gap-1.5" style="color: var(--text-dark);">
+              <span>📝</span>
+              <span>Special instructions (optional)</span>
+            </label>
+            <span id="noteCharCounter" class="text-[11px] font-bold" style="color: var(--text-muted);">
+              0 / 100
+            </span>
+          </div>
+          <textarea id="orderNote" 
+                    maxlength="100" 
+                    rows="2" 
+                    placeholder="e.g. Less spicy, keep green chutney separate..." 
+                    class="w-full rounded-xl p-3 text-xs resize-none transition"
+                    style="background-color: var(--bg-page); border: 1px solid var(--border-soft); color: var(--text-dark);"
+                    oninput="handleNoteInput(this)"></textarea>
+          <p class="text-[11px] mt-1.5" style="color: var(--text-muted);">
+            Kitchen staff will do their best to accommodate your preferences.
+          </p>
+        </div>
+
+      </section>
+
+      <!-- RIGHT COLUMN: Pickup Slot, Payment & Total Summary (5 cols) -->
+      <section class="lg:col-span-5 space-y-6">
+
+        <!-- 1. Pickup Slot Card -->
+        <div class="dashboard-card p-4 sm:p-6">
+          <div class="flex items-center justify-between mb-3">
+            <h3 class="font-extrabold text-sm uppercase tracking-wider flex items-center gap-1.5" style="color: var(--text-dark);">
+              <span>🕒</span>
+              <span>Pickup Window</span>
+            </h3>
+            <button type="button" 
+                    id="toggleSlotsBtn"
+                    onclick="toggleSlotPicker()" 
+                    class="text-xs font-bold px-2.5 py-1 rounded-lg border transition hover:opacity-85"
+                    style="background-color: var(--bg-panel); border-color: var(--border-soft); color: var(--primary);">
+              Change time
+            </button>
+          </div>
+
+          <!-- Selected Slot Highlight Banner -->
+          <div id="selectedSlotBanner" 
+               class="p-4 rounded-2xl border transition-all"
+               style="background-color: var(--bg-notice); border-color: var(--border-notice);">
+            <div class="text-[11px] font-bold uppercase tracking-wider" style="color: var(--text-muted);">
+              Your pickup time:
+            </div>
+            <div id="selectedSlotLabel" class="text-base sm:text-lg font-black mt-0.5" style="color: var(--text-dark);">
+              Calculating best time...
+            </div>
+            <div id="selectedSlotSubtitle" class="text-xs mt-1 font-semibold flex items-center gap-1.5" style="color: var(--text-muted);">
+              <span>⚡ Earliest available window based on food preparation</span>
+            </div>
+          </div>
+
+          <!-- No Slots Warning -->
+          <div id="noSlotsWarning" 
+               class="hidden p-3.5 rounded-2xl border text-xs font-bold mt-2"
+               style="background-color: var(--danger-bg); border-color: var(--danger); color: var(--danger);">
+            ⚠️ No pickup slots left today
+          </div>
+
+          <!-- Collapsible Slots Chips Grid -->
+          <div id="slotsPickerContainer" class="hidden mt-4 pt-4 border-t space-y-2.5" style="border-color: var(--border-soft);">
+            <div class="flex items-center justify-between text-[11px] font-bold" style="color: var(--text-muted);">
+              <span>Select another available slot:</span>
+              <span id="slotsCountLabel"></span>
+            </div>
+            <div id="slotsChipsGrid" class="grid grid-cols-2 gap-2 max-h-56 overflow-y-auto pr-1">
+              <!-- Rendered via renderSlots() -->
+            </div>
+          </div>
+        </div>
+
+        <!-- 2. Payment Method Card -->
+        <div class="dashboard-card p-4 sm:p-6">
+          <h3 class="font-extrabold text-sm uppercase tracking-wider mb-3 flex items-center gap-1.5" style="color: var(--text-dark);">
+            <span>💳</span>
+            <span>Payment Method</span>
+          </h3>
+
+          <div class="space-y-2.5">
+            <!-- Option 1: Pay at Counter -->
+            <label class="flex items-start gap-3 p-3.5 rounded-2xl border cursor-pointer transition"
+                   id="payCounterCard"
+                   style="background-color: var(--bg-panel); border-color: var(--primary);"
+                   onclick="selectPaymentMethod('Cash')">
+              <input type="radio" 
+                     name="paymentOption" 
+                     value="Cash" 
+                     id="paymentCounterRadio"
+                     checked
+                     class="mt-1 accent-[#8B5E3C]" />
+              <div class="flex-1">
+                <div class="flex items-center justify-between">
+                  <span class="text-xs sm:text-sm font-extrabold" style="color: var(--text-dark);">
+                    Pay at Counter
+                  </span>
+                  <span class="text-[10px] font-black px-2 py-0.5 rounded-full"
+                        style="background-color: var(--neutral-bg); color: var(--text-muted);">
+                    Pending
+                  </span>
+                </div>
+                <p class="text-[11px] mt-0.5 font-medium" style="color: var(--text-muted);">
+                  Pay via Cash or scanner when you collect your tray.
+                </p>
+              </div>
+            </label>
+
+            <!-- Option 2: Mock UPI / Online -->
+            <label class="flex items-start gap-3 p-3.5 rounded-2xl border cursor-pointer transition opacity-80"
+                   id="payUpiCard"
+                   style="background-color: var(--bg-card); border-color: var(--border-soft);"
+                   onclick="selectPaymentMethod('UPI')">
+              <input type="radio" 
+                     name="paymentOption" 
+                     value="UPI" 
+                     id="paymentUpiRadio"
+                     class="mt-1 accent-[#8B5E3C]" />
+              <div class="flex-1">
+                <div class="flex items-center justify-between">
+                  <span class="text-xs sm:text-sm font-extrabold" style="color: var(--text-dark);">
+                    Pay Online (Mock UPI)
+                  </span>
+                  <span class="text-[10px] font-black px-2 py-0.5 rounded-full"
+                        style="background-color: var(--success-bg); color: var(--success);">
+                    Instant (Demo)
+                  </span>
+                </div>
+                <p class="text-[11px] mt-0.5 font-medium" style="color: var(--text-muted);">
+                  Quick mock UPI authorization (no real money deducted).
+                </p>
+              </div>
+            </label>
+          </div>
+        </div>
+
+        <!-- 3. Bill Breakdown & Checkout Button -->
+        <div class="dashboard-card p-4 sm:p-6">
+          <h3 class="font-extrabold text-sm uppercase tracking-wider mb-3" style="color: var(--text-dark);">
+            Bill Details
+          </h3>
+
+          <div class="space-y-2 text-xs font-semibold" style="color: var(--text-muted);">
+            <div class="flex items-center justify-between">
+              <span>Item Subtotal</span>
+              <span id="billSubtotal" class="font-bold" style="color: var(--text-dark);">₹0</span>
+            </div>
+            <div class="flex items-center justify-between">
+              <span>Canteen Packaging & Fee</span>
+              <span class="font-bold text-[#4F7A4A]">FREE</span>
+            </div>
+            <div class="pt-2 border-t flex items-center justify-between text-base font-black" style="border-color: var(--border-soft);">
+              <span style="color: var(--text-dark);">To Pay</span>
+              <span id="billTotal" style="color: var(--text-dark);">₹0</span>
+            </div>
+          </div>
+
+          <!-- Validation Error Alert on Checkout -->
+          <div id="checkoutWarning" 
+               class="hidden mt-4 p-3 rounded-xl border text-xs font-bold"
+               style="background-color: var(--danger-bg); border-color: var(--danger); color: var(--danger);">
+            ⚠️ Please fix item warnings above before placing your order.
+          </div>
+
+          <!-- Place Order Button -->
+          <button type="button" 
+                  id="placeOrderBtn" 
+                  onclick="handlePlaceOrderClick()" 
+                  class="btn-primary w-full mt-4 py-3.5 px-4 font-black text-sm flex items-center justify-center gap-2">
+            <span id="placeOrderBtnSpinner" class="hidden animate-spin">⏳</span>
+            <span id="placeOrderBtnText">Place Order • ₹0</span>
+          </button>
+
+          <p class="text-[10px] text-center mt-2.5 font-semibold" style="color: var(--text-muted);">
+            Safe & fast college token generation upon confirmation.
+          </p>
+        </div>
+
+      </section>
+
+    </div>
+
+    <!-- ========================================================================= -->
+    <!-- 4. ORDER CONFIRMATION SUCCESS VIEW (Injected on successful placeOrder)     -->
+    <!-- ========================================================================= -->
+    <div id="orderSuccessView" class="hidden dashboard-card p-6 sm:p-12 text-center max-w-lg mx-auto my-6">
+      
+      <!-- Checkmark -->
+      <div class="w-16 h-16 sm:w-20 sm:h-20 rounded-full flex items-center justify-center text-3xl sm:text-4xl mx-auto mb-4 shadow-md"
+           style="background-color: var(--success-bg); color: var(--success); border: 2px solid var(--success);">
+        ✓
+      </div>
+
+      <h2 class="text-2xl sm:text-3xl font-black" style="color: var(--text-dark);">
+        Order Placed!
+      </h2>
+      <p class="text-xs sm:text-sm font-medium mt-1" style="color: var(--text-muted);">
+        Your tray is being sent to the canteen kitchen.
+      </p>
+
+      <!-- Token Box -->
+      <div class="my-6 p-6 rounded-3xl border text-center shadow-xs"
+           style="background-color: var(--bg-notice); border-color: var(--border-notice);">
+        <span class="text-xs font-extrabold uppercase tracking-widest" style="color: var(--text-muted);">
+          Your Digital Token
+        </span>
+        <div id="successTokenNumber" class="text-4xl sm:text-5xl font-black my-2 tracking-wider" style="color: var(--primary);">
+          #042
+        </div>
+        <p class="text-xs font-semibold" style="color: var(--text-dark);">
+          Show this token number at the canteen counter.
+        </p>
+      </div>
+
+      <!-- Order Details Summary -->
+      <div class="p-4 rounded-2xl border text-left text-xs space-y-2 mb-6"
+           style="background-color: var(--bg-page); border-color: var(--border-soft);">
+        <div class="flex justify-between">
+          <span style="color: var(--text-muted);">Pickup Window:</span>
+          <span id="successPickupSlot" class="font-black" style="color: var(--text-dark);">1:10 PM - 1:20 PM</span>
+        </div>
+        <div class="flex justify-between">
+          <span style="color: var(--text-muted);">Payment:</span>
+          <span id="successPaymentStatus" class="font-extrabold" style="color: var(--text-dark);">Paid (UPI Demo)</span>
+        </div>
+        <div class="flex justify-between">
+          <span style="color: var(--text-muted);">Total Amount:</span>
+          <span id="successTotalAmount" class="font-black" style="color: var(--text-dark);">₹0</span>
+        </div>
+      </div>
+
+      <!-- Action Buttons -->
+      <div class="flex flex-col sm:flex-row gap-3">
+        <a href="student-track.html" class="btn-primary flex-1 py-3 px-4 text-xs font-bold text-center">
+          ⏱️ Track My Order
+        </a>
+        <a href="student-menu.html" 
+           class="flex-1 py-3 px-4 text-xs font-bold text-center rounded-xl border transition hover:opacity-85"
+           style="background-color: var(--bg-panel); color: var(--text-dark); border-color: var(--border-soft);">
+          🍽️ Back to Menu
+        </a>
+      </div>
+
+    </div>
+
+  </main>
+
+  <!-- ========================================================================= -->
+  <!-- 5. MOBILE STICKY BOTTOM BAR (Phones only)                                 -->
+  <!-- ========================================================================= -->
+  <aside id="mobileBottomBar" 
+         class="sm:hidden fixed bottom-0 left-0 right-0 z-40 p-3.5 border-t backdrop-blur-md transition-all"
+         style="background-color: rgba(251, 244, 233, 0.96); border-color: var(--border-soft);">
+    <div class="flex items-center justify-between gap-3">
+      <div>
+        <span class="text-[10px] uppercase font-bold tracking-wider" style="color: var(--text-muted);">Total to pay</span>
+        <div id="mobileTotalAmount" class="text-lg font-black leading-tight" style="color: var(--text-dark);">
+          ₹0
+        </div>
+      </div>
+
+      <button type="button" 
+              id="mobilePlaceOrderBtn" 
+              onclick="handlePlaceOrderClick()" 
+              class="btn-primary py-2.5 px-5 font-black text-xs flex items-center gap-1.5 shadow-md">
+        <span>Place Order</span>
+        <span>→</span>
+      </button>
+    </div>
+  </aside>
+
+  <!-- ========================================================================= -->
+  <!-- 6. MOCK UPI PAYMENT POPUP (<dialog>)                                      -->
+  <!-- ========================================================================= -->
+  <dialog id="upiModal" 
+          class="p-0 border-0 rounded-3xl shadow-2xl max-w-sm w-full m-auto overflow-hidden text-center"
+          style="background-color: var(--bg-card); border: 1px solid var(--border-soft);">
+    
+    <div class="p-6 sm:p-7">
+      
+      <!-- Demo Pill -->
+      <div class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-wider mb-4 border"
+           style="background-color: var(--bg-notice); color: var(--primary); border-color: var(--border-notice);">
+        <span>⚠️</span>
+        <span>Demo Payment &bull; No Real Money</span>
+      </div>
+
+      <div class="w-14 h-14 rounded-2xl flex items-center justify-center text-3xl mx-auto mb-3 shadow-xs"
+           style="background-color: var(--bg-panel); color: var(--primary);">
+        📱
+      </div>
+
+      <h3 class="text-lg font-black" style="color: var(--text-dark);">
+        Mock UPI Authorization
+      </h3>
+      <p class="text-xs mt-1 font-medium" style="color: var(--text-muted);">
+        Scan demo QR or click pay to complete simulation.
+      </p>
+
+      <!-- Simulated Amount -->
+      <div class="my-5 p-4 rounded-2xl border" style="background-color: var(--bg-page); border-color: var(--border-soft);">
+        <div class="text-[11px] font-bold" style="color: var(--text-muted);">Pay to: QueueBite Canteen (Demo UPI)</div>
+        <div id="upiModalAmount" class="text-2xl font-black mt-1" style="color: var(--primary);">
+          ₹0
+        </div>
+        <div class="text-[10px] font-mono mt-1" style="color: var(--text-placeholder);">
+          VPA: queuebite.canteen@upi.demo
+        </div>
+      </div>
+
+      <!-- Action Buttons -->
+      <div class="flex items-center gap-3">
+        <button type="button" 
+                onclick="closeUpiPopup()" 
+                class="flex-1 py-3 px-4 rounded-xl text-xs font-bold border transition hover:opacity-85"
+                style="background-color: var(--bg-panel); border-color: var(--border-soft); color: var(--text-muted);">
+          Cancel
+        </button>
+        <button type="button" 
+                id="upiConfirmPayBtn" 
+                onclick="confirmUpiPayment()" 
+                class="btn-primary flex-1 py-3 px-4 text-xs font-black flex items-center justify-center gap-1.5">
+          <span id="upiPaySpinner" class="hidden animate-spin">⏳</span>
+          <span id="upiPayBtnText">Pay Now</span>
+        </button>
+      </div>
+
+    </div>
+  </dialog>
+
+  <!-- ========================================================================= -->
+  <!-- 7. TOAST NOTIFICATION CONTAINER                                           -->
+  <!-- ========================================================================= -->
+  <div id="toastContainer" 
+       class="fixed bottom-20 sm:bottom-6 right-4 sm:right-6 z-50 flex flex-col gap-2 pointer-events-none max-w-sm w-full"
+       aria-live="polite">
+  </div>
+
+  <!-- ========================================================================= -->
+  <!-- 8. STORAGE LAYER & PAGE LOGIC                                             -->
+  <!-- ========================================================================= -->
+  <script src="storage.js"></script>
+
+  <script>
+    // -------------------------------------------------------------------------
+    // PAGE STATE
+    // -------------------------------------------------------------------------
+    let currentStudent = null;
+    let cartItems = [];
+    let currentMenu = [];
+    let allTodaySlots = [];
+    let slotSettings = null;
+    let selectedSlot = null;
+    let selectedPaymentMethod = 'Cash'; // 'Cash' (Pay at counter) or 'UPI'
+    let isCanteenCurrentlyOpen = true;
+    let isSubmitting = false;
+    let cartValidationErrors = [];
+
+    // Category emoji fallback mapping
+    const CATEGORY_EMOJIS = {
+      'Snacks': '🥟',
+      'Meals': '🍛',
+      'Beverages': '🥤',
+      'South Indian': '🥞',
+      'Quick Bites': '🥪',
+      'Desserts': '🍩',
+      'Breakfast': '☕'
+    };
+
+    // -------------------------------------------------------------------------
+    // 1. INITIALIZATION & AUTH GUARD (loadCart)
+    // -------------------------------------------------------------------------
+    document.addEventListener('DOMContentLoaded', async () => {
+      // Auth Guard
+      const session = await getSession();
+      if (!session || session.role !== 'student') {
+        window.location.href = 'login.html';
+        return;
+      }
+      currentStudent = session;
+
+      // Populate student name
+      const name = currentStudent.name || 'Student';
+      document.getElementById('desktopStudentName').textContent = name;
+      document.getElementById('mobileStudentName').textContent = name;
+
+      // Check Canteen Open / Closed status
+      isCanteenCurrentlyOpen = await isCanteenOpen();
+      const banner = document.getElementById('canteenClosedBanner');
+      if (!isCanteenCurrentlyOpen && banner) {
+        banner.classList.remove('hidden');
+      }
+
+      // Load initial cart and menu data
+      await loadCart();
+
+      // Cross-tab storage, visibilitychange, and focus synchronization
+      async function handleCartSync() {
+        await loadCart();
+      }
+
+      window.addEventListener('storage', async (event) => {
+        if (!event.key || event.key === STORAGE_KEYS.CART || event.key === STORAGE_KEYS.MENU || event.key === STORAGE_KEYS.CANTEEN_OPEN || event.key === STORAGE_KEYS.SLOTS) {
+          await handleCartSync();
+        }
+      });
+
+      document.addEventListener('visibilitychange', async () => {
+        if (document.visibilityState === 'visible') {
+          await handleCartSync();
+        }
+      });
+
+      window.addEventListener('focus', async () => {
+        await handleCartSync();
+      });
+    });
+
+    /**
+     * Loads cart, latest menu, and slot configurations via storage.js
+     */
+    async function loadCart() {
+      currentMenu = await getMenu();
+      cartItems = await getCart();
+      slotSettings = await getSlotSettings();
+
+      // Check canteen status again
+      isCanteenCurrentlyOpen = await isCanteenOpen();
+      const banner = document.getElementById('canteenClosedBanner');
+      if (!isCanteenCurrentlyOpen) {
+        banner.classList.remove('hidden');
+      } else {
+        banner.classList.add('hidden');
+      }
+
+      // Update navbar cart count
+      const summary = await getCartSummary();
+      const countEl = document.getElementById('navCartCount');
+      if (countEl) countEl.textContent = summary.totalCount;
+
+      // Toggle Empty vs Active cart view
+      const emptyView = document.getElementById('emptyCartView');
+      const activeView = document.getElementById('activeCartView');
+      const mobileBar = document.getElementById('mobileBottomBar');
+
+      if (cartItems.length === 0) {
+        emptyView.classList.remove('hidden');
+        activeView.classList.add('hidden');
+        if (mobileBar) mobileBar.classList.add('hidden');
+        return;
+      }
+
+      emptyView.classList.add('hidden');
+      activeView.classList.remove('hidden');
+      if (mobileBar) mobileBar.classList.remove('hidden');
+
+      // Prepare slots and select best pickup window
+      await prepareTodaySlots();
+
+      // Render cart items & bill totals
+      renderCart();
+    }
+
+    // -------------------------------------------------------------------------
+    // 2. CART RENDERING & VALIDATION (renderCart, validateCart)
+    // -------------------------------------------------------------------------
+
+    /**
+     * Re-checks cart items against latest menu for availability & stock limits
+     */
+    function validateCart() {
+      cartValidationErrors = [];
+
+      cartItems.forEach(cartItem => {
+        const menuItem = currentMenu.find(m => m.id === cartItem.id || m.name === cartItem.name);
+
+        if (!menuItem || menuItem.isAvailable === false || menuItem.available === false || menuItem.stock === 0) {
+          cartValidationErrors.push({
+            id: cartItem.id,
+            type: 'soldOut',
+            message: 'Sold out, please remove'
+          });
+        } else if (menuItem.isVisible === false || menuItem.visible === false) {
+          cartValidationErrors.push({
+            id: cartItem.id,
+            type: 'hidden',
+            message: 'Currently unavailable, please remove'
+          });
+        } else if (menuItem.stock !== null && menuItem.stock !== undefined && cartItem.qty > menuItem.stock) {
+          cartValidationErrors.push({
+            id: cartItem.id,
+            type: 'stockExceeded',
+            message: `Only ${menuItem.stock} left in canteen, please reduce quantity`
+          });
+        }
+      });
+
+      return cartValidationErrors;
+    }
+
+    /**
+     * Renders cart items list, unit steppers, line totals, and warnings
+     */
+    async function renderCart() {
+      const container = document.getElementById('cartItemsList');
+      const badge = document.getElementById('cartCountBadge');
+      if (!container) return;
+
+      const summary = await getCartSummary();
+      if (badge) badge.textContent = `${summary.totalCount} item${summary.totalCount === 1 ? '' : 's'}`;
+
+      // Run live validation
+      validateCart();
+
+      // Render individual cart item rows
+      container.innerHTML = cartItems.map(item => {
+        const menuItem = currentMenu.find(m => m.id === item.id || m.name === item.name);
+        const itemError = cartValidationErrors.find(e => e.id === item.id);
+        const lineTotal = Number(item.price) * Number(item.qty);
+        const isVeg = item.isVeg !== undefined ? item.isVeg : item.veg;
+        const category = (menuItem && menuItem.category) || 'Snacks';
+        const fallbackEmoji = CATEGORY_EMOJIS[category] || '🍽️';
+        const imagePath = item.imageUrl || item.image || (menuItem && (menuItem.imageUrl || menuItem.image)) || '';
+
+        // Error badge html
+        let warningBadgeHtml = '';
+        if (itemError) {
+          warningBadgeHtml = `
+            <div class="mt-2 text-[11px] font-extrabold px-2.5 py-1 rounded-lg inline-flex items-center gap-1.5"
+                 style="background-color: var(--danger-bg); color: var(--danger); border: 1px solid rgba(179, 69, 58, 0.3);">
+              <span>⚠️</span>
+              <span>${itemError.message}</span>
+            </div>
+          `;
+        }
+
+        return `
+          <div class="py-4 first:pt-0 last:pb-0 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+            
+            <!-- Left: Dish thumbnail & details -->
+            <div class="flex items-center gap-3.5 flex-1 min-w-0">
+              
+              <!-- Food Image with Fallback -->
+              <div class="relative w-16 h-16 sm:w-20 sm:h-20 rounded-2xl overflow-hidden flex-shrink-0 flex items-center justify-center border"
+                   style="background-color: var(--bg-panel); border-color: var(--border-soft);">
+                ${imagePath ? `
+                  <img src="${imagePath}" 
+                       alt="${item.name}" 
+                       class="w-full h-full object-cover"
+                       onerror="this.onerror=null; this.classList.add('hidden'); this.nextElementSibling.classList.remove('hidden');" />
+                  <div class="hidden text-3xl select-none">${fallbackEmoji}</div>
+                ` : `
+                  <div class="text-3xl select-none">${fallbackEmoji}</div>
+                `}
+
+                <!-- Veg Indicator Dot -->
+                <div class="absolute top-1.5 left-1.5 bg-white/95 p-0.5 rounded shadow-2xs"
+                     title="${isVeg ? 'Vegetarian' : 'Non-Vegetarian'}">
+                  <div class="w-2.5 h-2.5 border flex items-center justify-center rounded-[2px]"
+                       style="border-color: ${isVeg ? 'var(--success)' : 'var(--danger)'};">
+                    <div class="w-1.5 h-1.5 rounded-full" 
+                         style="background-color: ${isVeg ? 'var(--success)' : 'var(--danger)'};"></div>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Item Info -->
+              <div class="min-w-0 flex-1">
+                <h4 class="font-extrabold text-sm sm:text-base leading-tight truncate" style="color: var(--text-dark);">
+                  ${item.name}
+                </h4>
+                <div class="flex items-center gap-2 mt-0.5 text-xs font-bold" style="color: var(--text-muted);">
+                  <span>₹${item.price} each</span>
+                  <span>&bull;</span>
+                  <span class="text-[11px] font-semibold">${category}</span>
+                </div>
+                ${warningBadgeHtml}
+              </div>
+
+            </div>
+
+            <!-- Right: Stepper, Line Total & Remove button -->
+            <div class="flex items-center justify-between sm:justify-end gap-4 w-full sm:w-auto">
+              
+              <!-- Quantity Stepper -->
+              <div class="inline-flex items-center rounded-xl p-1 border shadow-2xs"
+                   style="background-color: var(--bg-page); border-color: var(--border-soft);">
+                <button type="button" 
+                        onclick="handleStepItemQty('${item.id}', -1)" 
+                        class="w-7 h-7 rounded-lg flex items-center justify-center font-black text-sm transition hover:opacity-75 active:scale-95"
+                        style="color: var(--text-dark);"
+                        title="Reduce quantity">
+                  &minus;
+                </button>
+                <span class="w-7 text-center font-extrabold text-xs" style="color: var(--text-dark);">
+                  ${item.qty}
+                </span>
+                <button type="button" 
+                        onclick="handleStepItemQty('${item.id}', 1)" 
+                        class="w-7 h-7 rounded-lg flex items-center justify-center font-black text-sm transition hover:opacity-75 active:scale-95"
+                        style="color: var(--text-dark);"
+                        title="Increase quantity">
+                  &plus;
+                </button>
+              </div>
+
+              <!-- Line Total -->
+              <div class="text-right min-w-[70px]">
+                <div class="text-base font-black leading-tight" style="color: var(--text-dark);">
+                  ₹${lineTotal}
+                </div>
+              </div>
+
+              <!-- Remove Button -->
+              <button type="button" 
+                      onclick="handleRemoveItem('${item.id}')" 
+                      class="w-8 h-8 rounded-xl flex items-center justify-center text-xs font-bold border transition hover:opacity-85 shadow-2xs"
+                      style="background-color: var(--danger-bg); border-color: rgba(179, 69, 58, 0.25); color: var(--danger);"
+                      title="Remove item from tray">
+                ✕
+              </button>
+
+            </div>
+
+          </div>
+        `;
+      }).join('');
+
+      // Update bill summary
+      updateBillSummary(summary.subtotal);
+    }
+
+    /**
+     * Stepper click handler with stock checking
+     */
+    async function handleStepItemQty(itemId, delta) {
+      const cartItem = cartItems.find(i => i.id === itemId);
+      if (!cartItem) return;
+
+      const menuItem = currentMenu.find(m => m.id === itemId || m.name === cartItem.name);
+
+      // Check stock upper limit
+      if (delta > 0 && menuItem && menuItem.stock !== null && menuItem.stock !== undefined) {
+        if (cartItem.qty >= menuItem.stock) {
+          showToast(`Only ${menuItem.stock} available in stock today!`, 'warning');
+          return;
+        }
+      }
+
+      await updateCartItemQty(itemId, delta);
+      await loadCart();
+    }
+
+    /**
+     * Removes an item from cart
+     */
+    async function handleRemoveItem(itemId) {
+      await removeFromCart(itemId);
+      showToast('Item removed from tray', 'info');
+      await loadCart();
+    }
+
+    /**
+     * Updates bill breakdown and Place Order button state
+     */
+    function updateBillSummary(subtotal) {
+      document.getElementById('billSubtotal').textContent = `₹${subtotal}`;
+      document.getElementById('billTotal').textContent = `₹${subtotal}`;
+      document.getElementById('mobileTotalAmount').textContent = `₹${subtotal}`;
+
+      const placeOrderBtn = document.getElementById('placeOrderBtn');
+      const mobilePlaceOrderBtn = document.getElementById('mobilePlaceOrderBtn');
+      const warningBox = document.getElementById('checkoutWarning');
+      const btnText = document.getElementById('placeOrderBtnText');
+
+      if (btnText) {
+        btnText.textContent = `Place Order • ₹${subtotal}`;
+      }
+
+      // Check disabling conditions
+      const hasErrors = cartValidationErrors.length > 0;
+      const isClosed = !isCanteenCurrentlyOpen;
+      const noSlot = !selectedSlot;
+
+      const shouldDisable = hasErrors || isClosed || noSlot || isSubmitting;
+
+      if (placeOrderBtn) placeOrderBtn.disabled = shouldDisable;
+      if (mobilePlaceOrderBtn) mobilePlaceOrderBtn.disabled = shouldDisable;
+
+      if (warningBox) {
+        if (isClosed) {
+          warningBox.textContent = '⚠️ Canteen is closed';
+          warningBox.classList.remove('hidden');
+        } else if (noSlot) {
+          warningBox.textContent = '⚠️ No pickup slots left today';
+          warningBox.classList.remove('hidden');
+        } else if (hasErrors) {
+          warningBox.textContent = '⚠️ Your cart has a problem';
+          warningBox.classList.remove('hidden');
+        } else {
+          warningBox.classList.add('hidden');
+        }
+      }
+    }
+
+    // -------------------------------------------------------------------------
+    // 3. PICKUP TIME SLOT ALGORITHM (pickDefaultSlot, renderSlots)
+    // -------------------------------------------------------------------------
+
+    /**
+     * Helper to get local date string YYYY-MM-DD
+     */
+    function getTodayDateString() {
+      const d = new Date();
+      const year = d.getFullYear();
+      const month = String(d.getMonth() + 1).padStart(2, '0');
+      const day = String(d.getDate()).padStart(2, '0');
+      return `${year}-${month}-${day}`;
+    }
+
+    /**
+     * Prepares today's slots and picks the best default slot
+     */
+    async function prepareTodaySlots() {
+      const today = getTodayDateString();
+      allTodaySlots = await getSlots(today);
+
+      // If no slots configured for today in cubite_slots, generate from slotSettings
+      if (!allTodaySlots || allTodaySlots.length === 0) {
+        allTodaySlots = generateSlotsFromSettings(today, slotSettings);
+      }
+
+      // Pick default earliest slot
+      pickDefaultSlot();
+
+      // Render slots chips
+      renderSlots();
+    }
+
+    /**
+     * Fallback generator: constructs candidate day slots from settings
+     */
+    function generateSlotsFromSettings(dateStr, settings) {
+      const openTime = settings.openTime || '09:00';
+      const closeTime = settings.closeTime || '16:00';
+      const duration = Number(settings.duration) || 10;
+      const defaultMax = Number(settings.defaultMax) || 8;
+      const breaks = settings.breaks || [];
+
+      const openMins = timeStrToMinutes(openTime);
+      const closeMins = timeStrToMinutes(closeTime);
+      const generated = [];
+
+      let cur = openMins;
+      while (cur + duration <= closeMins) {
+        const start = minutesToTimeStr(cur);
+        const end = minutesToTimeStr(cur + duration);
+        const curStart = cur;
+        const curEnd = cur + duration;
+
+        // Check break overlap
+        const overlaps = breaks.some(brk => {
+          const bStart = timeStrToMinutes(brk.start);
+          const bEnd = timeStrToMinutes(brk.end);
+          return !(curEnd <= bStart || curStart >= bEnd);
+        });
+
+        if (!overlaps) {
+          generated.push({
+            id: `slot-${dateStr}-${cur}`,
+            date: dateStr,
+            start: start,
+            end: end,
+            maxOrders: defaultMax,
+            bookedCount: 0,
+            blocked: false
+          });
+        }
+        cur += duration;
+      }
+      return generated;
+    }
+
+    /**
+     * Determines the longest preparation time among items currently in the cart
+     */
+    function getMaxPrepTime() {
+      if (cartItems.length === 0) return 5;
+      let maxPrep = 5;
+      cartItems.forEach(cartItem => {
+        const menuItem = currentMenu.find(m => m.id === cartItem.id || m.name === cartItem.name);
+        const prep = (menuItem && (menuItem.prepTime || menuItem.prep)) || 5;
+        if (prep > maxPrep) maxPrep = prep;
+      });
+      return maxPrep;
+    }
+
+    /**
+     * Evaluates availability of a slot given current clock, prep time and buffer
+     */
+    function evaluateSlot(slot, maxPrep, nowMinutes, bufferMinutes) {
+      const startMins = timeStrToMinutes(slot.start);
+      const endMins = timeStrToMinutes(slot.end);
+      const leadTime = maxPrep + 5;
+      const maxOrders = slot.maxOrders || (slotSettings && slotSettings.defaultMax) || 8;
+      const booked = slot.bookedCount || 0;
+
+      if (slot.blocked) {
+        return { isAvailable: false, label: 'Blocked', reason: 'Blocked by admin' };
+      }
+      if (endMins <= nowMinutes) {
+        return { isAvailable: false, label: 'Passed', reason: 'Slot time has passed' };
+      }
+      if (booked >= maxOrders) {
+        return { isAvailable: false, label: 'Full', reason: 'Slot fully booked' };
+      }
+      if (startMins < nowMinutes + leadTime) {
+        return { isAvailable: false, label: 'Too soon', reason: `Needs ~${leadTime}m prep time` };
+      }
+      if (startMins - nowMinutes < bufferMinutes) {
+        return { isAvailable: false, label: 'Closed', reason: 'Booking buffer closed' };
+      }
+
+      const spotsLeft = Math.max(0, maxOrders - booked);
+      return { isAvailable: true, label: `${spotsLeft} spots`, spotsLeft };
+    }
+
+    /**
+     * Auto-selects earliest valid slot
+     */
+    function pickDefaultSlot() {
+      const now = new Date();
+      const nowMinutes = now.getHours() * 60 + now.getMinutes();
+      const maxPrep = getMaxPrepTime();
+      const buffer = (slotSettings && slotSettings.lastOrderBufferMinutes) || 0;
+
+      // Find first available slot
+      const candidate = allTodaySlots.find(slot => {
+        const evaluation = evaluateSlot(slot, maxPrep, nowMinutes, buffer);
+        return evaluation.isAvailable;
+      });
+
+      const labelEl = document.getElementById('selectedSlotLabel');
+      const subtitleEl = document.getElementById('selectedSlotSubtitle');
+      const noSlotsWarning = document.getElementById('noSlotsWarning');
+
+      if (candidate) {
+        selectedSlot = candidate;
+        const time12 = `${formatSlotTime12(candidate.start)} to ${formatSlotTime12(candidate.end)}`;
+        if (labelEl) labelEl.textContent = time12;
+        if (subtitleEl) subtitleEl.innerHTML = `<span>⚡ Est. kitchen prep: ~${maxPrep} mins</span>`;
+        if (noSlotsWarning) noSlotsWarning.classList.add('hidden');
+      } else {
+        selectedSlot = null;
+        if (labelEl) labelEl.textContent = 'No slots available';
+        if (subtitleEl) subtitleEl.textContent = 'All windows today are full or passed.';
+        if (noSlotsWarning) noSlotsWarning.classList.remove('hidden');
+      }
+    }
+
+    /**
+     * Renders selectable slot chips
+     */
+    function renderSlots() {
+      const grid = document.getElementById('slotsChipsGrid');
+      const countLabel = document.getElementById('slotsCountLabel');
+      if (!grid) return;
+
+      const now = new Date();
+      const nowMinutes = now.getHours() * 60 + now.getMinutes();
+      const maxPrep = getMaxPrepTime();
+      const buffer = (slotSettings && slotSettings.lastOrderBufferMinutes) || 0;
+
+      let availableCount = 0;
+
+      grid.innerHTML = allTodaySlots.map(slot => {
+        const evaluation = evaluateSlot(slot, maxPrep, nowMinutes, buffer);
+        if (evaluation.isAvailable) availableCount++;
+
+        const isSelected = selectedSlot && (selectedSlot.id === slot.id || selectedSlot.start === slot.start);
+        const slotDisplay = `${formatSlotTime12(slot.start)} - ${formatSlotTime12(slot.end)}`;
+
+        if (evaluation.isAvailable) {
+          // Available chip
+          const borderStyle = isSelected ? 'border: 2px solid var(--primary); background-color: var(--bg-card);' : 'border: 1px solid var(--border-soft); background-color: var(--bg-panel);';
+          return `
+            <button type="button" 
+                    onclick="selectSlot('${slot.id || slot.start}')" 
+                    class="p-2.5 rounded-xl text-left transition hover:scale-[1.01] active:scale-95 shadow-2xs ${isSelected ? 'ring-2 ring-[var(--primary)]' : ''}"
+                    style="${borderStyle}">
+              <div class="flex items-center justify-between text-xs font-black" style="color: var(--text-dark);">
+                <span>${slotDisplay}</span>
+                ${isSelected ? `<span class="text-xs text-[var(--primary)]">✓</span>` : ''}
+              </div>
+              <div class="text-[10px] font-extrabold mt-0.5" style="color: var(--success);">
+                ${evaluation.label}
+              </div>
+            </button>
+          `;
+        } else {
+          // Disabled chip (Full / Blocked / Passed / Too soon)
+          return `
+            <div class="p-2.5 rounded-xl text-left opacity-40 cursor-not-allowed border"
+                 style="background-color: var(--neutral-bg); border-color: var(--border-soft);"
+                 title="${evaluation.reason}">
+              <div class="flex items-center justify-between text-xs font-bold" style="color: var(--text-muted);">
+                <span>${slotDisplay}</span>
+              </div>
+              <div class="text-[10px] font-bold mt-0.5" style="color: var(--text-muted);">
+                ${evaluation.label}
+              </div>
+            </div>
+          `;
+        }
+      }).join('');
+
+      if (countLabel) {
+        countLabel.textContent = `${availableCount} open`;
+      }
+    }
+
+    /**
+     * Chip selection handler
+     */
+    function selectSlot(slotIdentifier) {
+      const match = allTodaySlots.find(s => (s.id === slotIdentifier || s.start === slotIdentifier));
+      if (!match) return;
+
+      selectedSlot = match;
+      const labelEl = document.getElementById('selectedSlotLabel');
+      if (labelEl) {
+        labelEl.textContent = `${formatSlotTime12(match.start)} to ${formatSlotTime12(match.end)}`;
+      }
+
+      renderSlots();
+      updateBillSummary(cartItems.reduce((sum, i) => sum + (Number(i.price) * Number(i.qty)), 0));
+      showToast(`Pickup time updated: ${formatSlotTime12(match.start)}`, 'success');
+    }
+
+    /**
+     * Toggles the slot picker chip grid open/closed
+     */
+    function toggleSlotPicker() {
+      const picker = document.getElementById('slotsPickerContainer');
+      const btn = document.getElementById('toggleSlotsBtn');
+      if (!picker) return;
+
+      const isHidden = picker.classList.contains('hidden');
+      if (isHidden) {
+        picker.classList.remove('hidden');
+        if (btn) btn.textContent = 'Hide times';
+      } else {
+        picker.classList.add('hidden');
+        if (btn) btn.textContent = 'Change time';
+      }
+    }
+
+    // -------------------------------------------------------------------------
+    // 4. PAYMENT SELECTION & MOCK UPI (openUpiPopup, selectPaymentMethod)
+    // -------------------------------------------------------------------------
+
+    function selectPaymentMethod(method) {
+      selectedPaymentMethod = method;
+
+      const counterCard = document.getElementById('payCounterCard');
+      const upiCard = document.getElementById('payUpiCard');
+      const counterRadio = document.getElementById('paymentCounterRadio');
+      const upiRadio = document.getElementById('paymentUpiRadio');
+
+      if (method === 'Cash') {
+        counterRadio.checked = true;
+        counterCard.style.backgroundColor = 'var(--bg-panel)';
+        counterCard.style.borderColor = 'var(--primary)';
+        counterCard.classList.remove('opacity-80');
+
+        upiCard.style.backgroundColor = 'var(--bg-card)';
+        upiCard.style.borderColor = 'var(--border-soft)';
+        upiCard.classList.add('opacity-80');
+      } else {
+        upiRadio.checked = true;
+        upiCard.style.backgroundColor = 'var(--bg-panel)';
+        upiCard.style.borderColor = 'var(--primary)';
+        upiCard.classList.remove('opacity-80');
+
+        counterCard.style.backgroundColor = 'var(--bg-card)';
+        counterCard.style.borderColor = 'var(--border-soft)';
+        counterCard.classList.add('opacity-80');
+      }
+    }
+
+    /**
+     * Opens Mock UPI Popup Dialog
+     */
+    function openUpiPopup(amount) {
+      const modal = document.getElementById('upiModal');
+      const amtEl = document.getElementById('upiModalAmount');
+      const btnText = document.getElementById('upiPayBtnText');
+
+      if (amtEl) amtEl.textContent = `₹${amount}`;
+      if (btnText) btnText.textContent = `Pay ₹${amount}`;
+
+      if (modal && typeof modal.showModal === 'function') {
+        modal.showModal();
+      } else if (modal) {
+        modal.classList.remove('hidden');
+      }
+    }
+
+    function closeUpiPopup() {
+      const modal = document.getElementById('upiModal');
+      if (modal && typeof modal.close === 'function') {
+        modal.close();
+      } else if (modal) {
+        modal.classList.add('hidden');
+      }
+    }
+
+    /**
+     * Executes mock UPI payment confirmation
+     */
+    async function confirmUpiPayment() {
+      const spinner = document.getElementById('upiPaySpinner');
+      const btnText = document.getElementById('upiPayBtnText');
+      const confirmBtn = document.getElementById('upiConfirmPayBtn');
+
+      if (spinner) spinner.classList.remove('hidden');
+      if (btnText) btnText.textContent = 'Authorizing...';
+      if (confirmBtn) confirmBtn.disabled = true;
+
+      // Simulate instantaneous gateway demo delay
+      setTimeout(async () => {
+        closeUpiPopup();
+        if (spinner) spinner.classList.add('hidden');
+        if (confirmBtn) confirmBtn.disabled = false;
+        await submitOrder('UPI');
+      }, 700);
+    }
+
+    // -------------------------------------------------------------------------
+    // 5. PLACE ORDER SUBMISSION (submitOrder)
+    // -------------------------------------------------------------------------
+
+    /**
+     * Dispatches order flow according to selected payment method
+     */
+    async function handlePlaceOrderClick() {
+      if (isSubmitting) return;
+
+      // Canteen open check
+      const isOpen = await isCanteenOpen();
+      if (!isOpen) {
+        showToast('Canteen is closed right now.', 'error');
+        return;
+      }
+
+      // Re-validate cart items
+      validateCart();
+      if (cartValidationErrors.length > 0) {
+        showToast('Please fix cart warnings before placing order.', 'error');
+        renderCart();
+        return;
+      }
+
+      // Check slot selection
+      if (!selectedSlot) {
+        showToast('No pickup window available today.', 'error');
+        return;
+      }
+
+      const summary = await getCartSummary();
+
+      if (selectedPaymentMethod === 'UPI') {
+        openUpiPopup(summary.subtotal);
+      } else {
+        await submitOrder('Cash');
+      }
+    }
+
+    /**
+     * Places order via storage.js placeOrder(...) and renders confirmation
+     */
+    async function submitOrder(method) {
+      if (isSubmitting) return;
+      isSubmitting = true;
+
+      // Update button loading state
+      const placeBtn = document.getElementById('placeOrderBtn');
+      const spinner = document.getElementById('placeOrderBtnSpinner');
+      const btnText = document.getElementById('placeOrderBtnText');
+      const mobilePlaceBtn = document.getElementById('mobilePlaceOrderBtn');
+
+      if (placeBtn) placeBtn.disabled = true;
+      if (mobilePlaceBtn) mobilePlaceBtn.disabled = true;
+      if (spinner) spinner.classList.remove('hidden');
+      if (btnText) btnText.textContent = 'Placing Order...';
+
+      try {
+        // 1. Re-check slot capacity immediately before placing order
+        const today = getTodayDateString();
+        const latestSlots = await getSlots(today);
+        if (latestSlots && latestSlots.length > 0) {
+          const freshSlot = latestSlots.find(s => s.id === selectedSlot.id || s.start === selectedSlot.start);
+          if (freshSlot && (freshSlot.blocked || (freshSlot.bookedCount || 0) >= freshSlot.maxOrders)) {
+            showToast('Selected slot just filled up! Please choose another time.', 'warning');
+            await prepareTodaySlots();
+            isSubmitting = false;
+            if (placeBtn) placeBtn.disabled = false;
+            if (mobilePlaceBtn) mobilePlaceBtn.disabled = false;
+            if (spinner) spinner.classList.add('hidden');
+            if (btnText) btnText.textContent = `Place Order • ₹${(await getCartSummary()).subtotal}`;
+            return;
+          }
+        }
+
+        // 2. Prepare order payload
+        const summary = await getCartSummary();
+        const noteText = (document.getElementById('orderNote').value || '').trim().slice(0, 100);
+        const slotDisplay = `${formatSlotTime12(selectedSlot.start)} to ${formatSlotTime12(selectedSlot.end)}`;
+
+        const orderPayload = {
+          items: cartItems,
+          total: summary.subtotal,
+          slotTime: slotDisplay,
+          paymentMethod: method === 'UPI' ? 'UPI' : 'Cash',
+          paymentStatus: method === 'UPI' ? 'Paid' : 'Pending',
+          note: noteText,
+          studentName: currentStudent.name || 'Student',
+          collegeId: currentStudent.rollNo || currentStudent.collegeId || 'N/A',
+          rollNo: currentStudent.rollNo || currentStudent.collegeId || 'N/A',
+          phone: currentStudent.phone || ''
+        };
+
+        // 3. Call storage.js placeOrder
+        const newOrder = await placeOrder(orderPayload);
+
+        // 4. Update UI to Confirmation Screen
+        renderOrderConfirmation(newOrder);
+        showToast(`Order placed successfully! Token: ${newOrder.token}`, 'success');
+
+      } catch (err) {
+        console.error('Order placement error:', err);
+        showToast(err.message || 'Failed to place order. Please try again.', 'error');
+        isSubmitting = false;
+        if (placeBtn) placeBtn.disabled = false;
+        if (mobilePlaceBtn) mobilePlaceBtn.disabled = false;
+        if (spinner) spinner.classList.add('hidden');
+        if (btnText) btnText.textContent = `Place Order • ₹${(await getCartSummary()).subtotal}`;
+      }
+    }
+
+    /**
+     * Renders celebratory order confirmation card
+     */
+    function renderOrderConfirmation(order) {
+      const activeView = document.getElementById('activeCartView');
+      const successView = document.getElementById('orderSuccessView');
+      const mobileBar = document.getElementById('mobileBottomBar');
+      const navCartCount = document.getElementById('navCartCount');
+
+      if (activeView) activeView.classList.add('hidden');
+      if (mobileBar) mobileBar.classList.add('hidden');
+      if (navCartCount) navCartCount.textContent = '0';
+
+      document.getElementById('successTokenNumber').textContent = order.token;
+      document.getElementById('successPickupSlot').textContent = order.slotTime;
+      document.getElementById('successPaymentStatus').textContent = order.paymentMethod === 'UPI' ? 'Paid (UPI Demo)' : 'Pending (Pay at counter)';
+      document.getElementById('successTotalAmount').textContent = `₹${order.total}`;
+
+      if (successView) {
+        successView.classList.remove('hidden');
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+      }
+    }
+
+    // -------------------------------------------------------------------------
+    // 6. SPECIAL INSTRUCTIONS & CHARACTER COUNTER
+    // -------------------------------------------------------------------------
+    function handleNoteInput(textarea) {
+      const countEl = document.getElementById('noteCharCounter');
+      if (countEl) {
+        countEl.textContent = `${textarea.value.length} / 100`;
+      }
+    }
+
+    // -------------------------------------------------------------------------
+    // 7. NAVBAR & LOGOUT HANDLERS
+    // -------------------------------------------------------------------------
+    function toggleMobileMenu() {
+      const dropdown = document.getElementById('mobileMenuDropdown');
+      if (dropdown) dropdown.classList.toggle('hidden');
+    }
+
+    async function handleLogout() {
+      await logoutUser();
+      showToast('Logged out successfully', 'info');
+      setTimeout(() => {
+        window.location.href = 'login.html';
+      }, 350);
+    }
+
+    // -------------------------------------------------------------------------
+    // 8. FLOATING TOAST NOTIFICATION UTILITY
+    // -------------------------------------------------------------------------
+    function showToast(message, type = 'info') {
+      const container = document.getElementById('toastContainer');
+      if (!container) return;
+
+      const toast = document.createElement('div');
+      let icon = 'ℹ️';
+      let borderAccent = 'var(--primary)';
+
+      if (type === 'success') {
+        icon = '✅';
+        borderAccent = 'var(--success)';
+      } else if (type === 'warning') {
+        icon = '⚠️';
+        borderAccent = 'var(--accent)';
+      } else if (type === 'error') {
+        icon = '❌';
+        borderAccent = 'var(--danger)';
+      }
+
+      toast.className = `pointer-events-auto flex items-center gap-2.5 px-4 py-3 rounded-2xl shadow-xl text-xs font-bold transform transition-all duration-300 translate-y-3 opacity-0`;
+      toast.style.backgroundColor = 'var(--text-dark)';
+      toast.style.color = 'var(--bg-page)';
+      toast.style.border = '1px solid var(--border-soft)';
+      toast.style.borderLeft = `5px solid ${borderAccent}`;
+      toast.style.boxShadow = '0 10px 25px -3px rgba(47, 33, 24, 0.35)';
+      toast.innerHTML = `<span>${icon}</span> <span>${message}</span>`;
+
+      container.appendChild(toast);
+
+      requestAnimationFrame(() => {
+        toast.classList.remove('translate-y-3', 'opacity-0');
+      });
+
+      setTimeout(() => {
+        toast.classList.add('opacity-0', 'translate-y-2');
+        setTimeout(() => toast.remove(), 300);
+      }, 2600);
+    }
+  </script>
+
+</body>
+</html>
